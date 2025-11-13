@@ -12,8 +12,8 @@ public class OralCareApp {
         // Test des entités principales
         testEntities();
         
-        System.out.println("\n✅ Application OralCare démarrée avec succès!");
-        System.out.println("📊 Architecture complète implémentée:");
+        System.out.println("\n Application OralCare démarrée avec succès!");
+        System.out.println(" Architecture complète implémentée:");
         System.out.println("   - Entités métier (Patient, Médecin, Cabinet, etc.)");
         System.out.println("   - Enums (Sexe, Assurance, Statuts, etc.)");
         System.out.println("   - Schéma MySQL complet");
@@ -21,7 +21,7 @@ public class OralCareApp {
     }
     
     private static void testEntities() {
-        System.out.println("\n🧪 Test des entités:");
+        System.out.println("\n Test des entités:");
         
         // Test Patient
         Patient patient = new Patient();
