@@ -1,63 +1,247 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
-    <artifactId>OralCare</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <!-- =================================================================== -->
+    <!--             FICHIER DE CONFIGURATION MAVEN (POM.XML)                -->
+    <!--  Projet de gestion d'un cabinet dentaire : OralCare                -->
+    <!--  Objectifs pedagogiques :
+                 1) Forcer une version Java (23 par defaut, 25 possible)
+                 2) Definir une classe MAIN pour executer l application
+                 3) Generer un "fat-jar" executable (Shade)
+                 4) Lancer les tests (JUnit 5) proprement (Surefire)
+                 5) Generer la JavaDoc
+                 6) Rendre le build reproductible (memes resultats partout)
+                                                                              -->
+    <!--  Auteur : Pr. O. El Midaoui                                          -->
+    <!-- ==================================================================== -->
 
+    <!-- ================== IDENTITE DU PROJET ====================== -->
+    <groupId>ma.oralCare</groupId>        <!-- Domaine ou organisation -->
+    <artifactId>OralCare</artifactId>     <!-- Nom du projet -->
+    <version>1.0-SNAPSHOT</version>         <!-- Version du projet -->
+    <packaging>jar</packaging>              <!-- Type de livrable genere -->
+
+    <name>OralCare</name>
+    <url>http://oralCare.ma</url>
+    <description>Application de gestion complete d'un cabinet dentaire :
+        gestion des patients, consultations, rendez-vous, facturation et suivi medical.
+    </description>
+
+    <!-- =================== PROPRIETES GLOBALES ===================== -->
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Version du compilateur Java utilisee (ici JDK 23) -->
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
+        <maven.compiler.release>23</maven.compiler.release>
+
+        <!-- Encodage des fichiers sources et ressources -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Auteur du projet (metadonnee optionnelle) -->
+        <Author>Pr. O. El Midaoui</Author>
+        <!-- Version du MySQL driver placee ici pour lisibilite -->
+        <mysql.version>8.0.33</mysql.version>
+        <!-- Versions des plugins epinglees (bonne pratique) -->
+        <plugin.compiler.version>3.11.0</plugin.compiler.version>
+        <plugin.surefire.version>3.2.5</plugin.surefire.version>
+        <plugin.shade.version>3.5.3</plugin.shade.version>
+        <plugin.javadoc.version>3.6.3</plugin.javadoc.version>
+        <plugin.enforcer.version>3.4.1</plugin.enforcer.version>
     </properties>
 
+    <!-- =================== DEPENDANCES DU PROJET =================== -->
     <dependencies>
-        <!-- Lombok -->
+
+        <!-- === Connexion a la base de donnees MySQL === -->
+        <!-- Permet d utiliser le driver JDBC pour etablir la connexion -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+            <exclusions>
+                <!-- au cas ou une autre lib collerait slf4j-api 1.7.x -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Force la pile SLF4J en 2.0.13 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+        <!-- Couper tous les logs SLF4J -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+
+        <!-- === Lombok (simplifie le code Java) === -->
+        <!-- Genere automatiquement les getters, setters, constructeurs, etc.
+             Necessite d activer l annotation processing dans l IDE -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.34</version>
+            <version>1.18.38</version>
             <scope>provided</scope>
         </dependency>
-        
-        <!-- MySQL Connector -->
+
+        <!-- === BCrypt (cryptage des mot de passe utilisateur) === -->
         <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>8.2.0</version>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
         </dependency>
-        
-        <!-- JUnit pour les tests -->
+
+        <!-- === JUnit (tests unitaires) === -->
+        <!-- Librairie utilisee pour ecrire et executer des tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.9.2</version>
+            <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- (Optionnel) Assertions plus lisibles -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.26.3</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
+    <!-- ================== Build & Plugins ==================
+       Les plugins ci-dessous :
+         1) Verifient la version de Java (Enforcer)
+         2) Compilent en version precise (Compiler)
+         3) Fabriquent un JAR executable avec dependances (Shade)
+         4) Executent les tests (Surefire)
+         5) Generent la JavaDoc (Javadoc)
+  -->
     <build>
         <plugins>
+
+            <!-- (0) Maven Enforcer : GARANTIR la meme version de Java partout
+                 - Ici, on exige Java entre 23 inclus et 26 exclu (23/24/25 autorises).
+                 - Si un etudiant utilise Java 21 : le build echoue avec un message clair.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${plugin.enforcer.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[23,26)</version>
+                                    <message>Java 23 a 25 requis. Changez votre JDK ou ajustez le POM.</message>
+                                </requireJavaVersion>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- (1) Compiler : force la version du langage (release 23/25)
+                 - release evite les incoherences source/target et gere les API.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>${plugin.compiler.version}</version>
                 <configuration>
-                    <release>17</release>
+                    <release>${maven.compiler.release}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.34</version>
+                            <version>1.18.38</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- (2) Shade : cree un "fat-jar" executable (inclut les dependances)
+                 - Declare la classe principale (Main) dans le MANIFEST
+                 - Produit : target/OralCare-1.0-SNAPSHOT-shaded.jar
+                 - Commande : java -jar target/....-shaded.jar
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${plugin.shade.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <!-- Classe principale a ADAPTER si differente -->
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>ma.oralCare.OralCareApp</mainClass>
+                                </transformer>
+                            </transformers>
+                            <!-- Rendre le JAR reproductible (ordre stable, pas d horodatage variable) -->
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <minimizeJar>false</minimizeJar> <!-- laisser a false pour eviter de retirer inutilement des classes -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- (3) Surefire : lance les tests unitaires JUnit 5 pendant `mvn test`
+                 - Detection automatique des classes de test nommees *Test.java, *Tests.java, *TestCase.java
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${plugin.surefire.version}</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- (4) JavaDoc : genere la documentation de l API
+                 - Commande : mvn javadoc:javadoc
+                 - Sortie : target/site/apidocs/index.html
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${plugin.javadoc.version}</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <source>${maven.compiler.release}</source>
+                    <!-- Evite l echec si certains commentaires manquent -->
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
-
 
 </project>
