@@ -19,7 +19,7 @@ public abstract class BaseEntity {
     
     private Long idEntite;
     
-    private LocalDate dateCréation;
+    private LocalDate dateCreation;
     
     private LocalDateTime dateDerniereModification;
     
