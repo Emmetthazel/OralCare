@@ -7,11 +7,15 @@ import ma.oralCare.entities.common.*;
 import ma.oralCare.entities.consultation.*;
 import ma.oralCare.entities.dossier.*;
 import ma.oralCare.entities.facture.*;
+import ma.oralCare.entities.staff.*;
 import ma.oralCare.entities.enums.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.sql.Date;
+import java.sql.Timestamp;
+
 
 public final class RowMappers {
     private RowMappers(){}
@@ -496,6 +500,180 @@ public final class RowMappers {
         o.setModifiePar(rs.getString("modifiePar"));
 
         return o;
+    }
+
+    public static DossierMedicale mapDossierMedicale(ResultSet rs) throws SQLException {
+
+        DossierMedicale dm = new DossierMedicale();
+
+        // ----- CHAMPS PROPRES À DossierMedicale -----
+        dm.setId(rs.getLong("id"));
+
+        var d = rs.getDate("dateDeCreation");
+        if (d != null) {
+            dm.setDateDeCreation(d.toLocalDate());
+        }
+
+        // ----- RELATION : Patient (FK : patient_id) -----
+        Long patientId = rs.getLong("patient_id");
+        if (!rs.wasNull()) {
+            Patient p = new Patient();
+            p.setId(patientId);
+            dm.setPatient(p);
+        } else {
+            dm.setPatient(null);
+        }
+
+        // ----- RELATION : Medecin (FK : medecin_id / id_user) -----
+        Long medId = rs.getLong("medecin_id");
+        if (!rs.wasNull()) {
+            Medecin m = new Medecin();
+            m.setId(medId);
+            dm.setMedecin(m);
+        } else {
+            dm.setMedecin(null);
+        }
+
+        // ----- RELATION : Situation Financière (FK : situationFinanciere_id) -----
+        Long idSF = rs.getLong("situationFinanciere_id");
+        if (!rs.wasNull()) {
+            SituationFinanciere sf = new SituationFinanciere();
+            sf.setId(idSF);
+            dm.setSituationFinanciere(sf);
+        } else {
+            dm.setSituationFinanciere(null);
+        }
+
+        // ----- LISTES : chargées plus tard -----
+        dm.setConsultations(null);
+        dm.setOrdonnances(null);
+        dm.setCertificats(null);
+        dm.setRendezVous(null);
+
+        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
+        dm.setIdEntite(rs.getLong("idEntite"));
+
+        var dcreat = rs.getDate("dateCreation");
+        if (dcreat != null) dm.setDateCréation(dcreat.toLocalDate());
+
+        var dmod = rs.getTimestamp("dateDerniereModification");
+        if (dmod != null) dm.setDateDerniereModification(dmod.toLocalDateTime());
+
+        dm.setCreePar(rs.getString("creePar"));
+        dm.setModifiePar(rs.getString("modifiePar"));
+
+        return dm;
+    }
+
+    public static Staff mapStaff(ResultSet rs) throws SQLException {
+
+        Staff staff = new Staff();
+
+        // Champs hérités de Utilisateur
+        staff.setId(rs.getLong("id"));
+        staff.setNom(rs.getString("nom"));
+        staff.setEmail(rs.getString("email"));
+        staff.setCin(rs.getString("cin"));
+        staff.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            staff.setSexe(Sexe.valueOf(sexeValue)); // Assure-toi que la colonne contient MALE/FEMALE/OTHER
+        }
+
+        staff.setLogin(rs.getString("login"));
+        staff.setMotDePass(rs.getString("mot_de_pass"));
+
+        Date lastLogin = rs.getDate("last_login_date");
+        if (lastLogin != null) {
+            staff.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("date_naissance");
+        if (dateNaissance != null) {
+            staff.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        // Champs spécifiques à Staff
+        staff.setSalaire(rs.getDouble("salaire"));
+        staff.setPrime(rs.getDouble("prime"));
+
+        Date recrutement = rs.getDate("date_recrutement");
+        if (recrutement != null) {
+            staff.setDateRecrutement(recrutement.toLocalDate());
+        }
+
+        staff.setSoldeConge(rs.getInt("solde_conge"));
+
+        // Cabinet médical (clé étrangère)
+        Long cabinetId = rs.getLong("cabinet_id");
+        if (cabinetId != null && cabinetId != 0) {
+            CabinetMedicale cab = new CabinetMedicale();
+            cab.setId(cabinetId);
+            staff.setCabinetMedicale(cab);
+        }
+
+        // Les rôles et notifications doivent être chargés ailleurs (requêtes séparées)
+        return staff;
+    }
+
+    public static Facture mapFacture(ResultSet rs) throws SQLException {
+
+        Facture f = new Facture();
+
+        // ----- CHAMPS PROPRES À Facture -----
+        f.setId(rs.getLong("id"));
+        f.setTotaleFacture(rs.getDouble("totaleFacture"));
+        f.setTotalePaye(rs.getDouble("totalePaye"));
+        f.setReste(rs.getDouble("reste"));
+
+        String statut = rs.getString("statut");
+        if (statut != null) {
+            f.setStatut(StatutFacture.valueOf(statut));
+        }
+
+        Timestamp dt = rs.getTimestamp("dateFacture");
+        if (dt != null) {
+            f.setDateFacture(dt.toLocalDateTime());
+        }
+
+        // ----- RELATION : SITUATION FINANCIERE (FK : situationFinanciere_id) -----
+        Long sfId = rs.getLong("situationFinanciere_id");
+        if (!rs.wasNull()) {
+            SituationFinanciere sf = new SituationFinanciere();
+            sf.setId(sfId);
+            f.setSituationFinanciere(sf);
+        } else {
+            f.setSituationFinanciere(null);
+        }
+
+        // ----- RELATION : CONSULTATION (FK : consultation_id) -----
+        Long consId = rs.getLong("consultation_id");
+        if (!rs.wasNull()) {
+            Consultation c = new Consultation();
+            c.setId(consId);
+            f.setConsultation(c);
+        } else {
+            f.setConsultation(null);
+        }
+
+        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
+        f.setIdEntite(rs.getLong("idEntite"));
+
+        Date dcreat = rs.getDate("dateCreation");
+        if (dcreat != null) {
+            f.setDateCréation(dcreat.toLocalDate());
+        }
+
+        Timestamp dmod = rs.getTimestamp("dateDerniereModification");
+        if (dmod != null) {
+            f.setDateDerniereModification(dmod.toLocalDateTime());
+        }
+
+        f.setCreePar(rs.getString("creePar"));
+        f.setModifiePar(rs.getString("modifiePar"));
+
+        return f;
     }
 
 }
