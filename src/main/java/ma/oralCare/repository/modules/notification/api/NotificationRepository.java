@@ -1,4 +1,9 @@
-package ma.oralCare.repository.modules.notification.api;
+package ma.oralCare.repository.notification.api;
 
-public class NotificationRepository {
+import ma.oralCare.entities.notification.Notification;
+import ma.oralCare.repository.common.CrudRepository;
+
+public interface NotificationRepository extends CrudRepository<Notification, Long> {
 }
+
+

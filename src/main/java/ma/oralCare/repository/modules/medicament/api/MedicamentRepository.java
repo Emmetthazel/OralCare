@@ -1,4 +1,9 @@
-package ma.oralCare.repository.modules.medicament.api;
+package ma.oralCare.repository.medicament.api;
 
-public class MedicamentRepository {
+import ma.oralCare.entities.medicament.Medicament;
+import ma.oralCare.repository.common.CrudRepository;
+
+public interface MedicamentRepository extends CrudRepository<Medicament, Long> {
 }
+
+

@@ -1,4 +1,9 @@
-package ma.oralCare.repository.modules.consultation.api;
+package ma.oralCare.repository.consultation.api;
 
-public class InterventionMedecinRepository {
+import ma.oralCare.entities.consultation.InterventionMedecin;
+import ma.oralCare.repository.common.CrudRepository;
+
+public interface InterventionMedecinRepository extends CrudRepository<InterventionMedecin, Long> {
 }
+
+

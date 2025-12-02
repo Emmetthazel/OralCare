@@ -1,11 +1,14 @@
-package ma.oralCare.repository.modules.patient.impl;
+package ma.oralCare.repository.patient.impl;
 
 import ma.oralCare.entities.patient.Patient;
 import ma.oralCare.repository.common.RowMappers;
-import ma.oralCare.repository.modules.patient.api.PatientRepository;
+import ma.oralCare.repository.patient.api.PatientRepository;
 
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,10 +21,178 @@ public class PatientRepositoryImpl implements PatientRepository {
     }
 
     @Override
+    public Patient save(Patient entity) {
+        final String sql = """
+                INSERT INTO patients
+                    (nom, prenom, adresse, telephone, email, dateNaissance, dateCreation, sexe, assurance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, entity.getNom());
+            ps.setString(2, entity.getPrenom());
+            ps.setString(3, entity.getAdresse());
+            ps.setString(4, entity.getTelephone());
+            ps.setString(5, entity.getEmail());
+            if (entity.getDateNaissance() != null) {
+                ps.setDate(6, java.sql.Date.valueOf(entity.getDateNaissance()));
+            } else {
+                ps.setNull(6, java.sql.Types.DATE);
+            }
+            if (entity.getDateCreation() != null) {
+                ps.setTimestamp(7, java.sql.Timestamp.valueOf(entity.getDateCreation()));
+            } else {
+                ps.setNull(7, java.sql.Types.TIMESTAMP);
+            }
+            if (entity.getSexe() != null) {
+                ps.setString(8, entity.getSexe().name());
+            } else {
+                ps.setNull(8, java.sql.Types.VARCHAR);
+            }
+            if (entity.getAssurance() != null) {
+                ps.setString(9, entity.getAssurance().name());
+            } else {
+                ps.setNull(9, java.sql.Types.VARCHAR);
+            }
+
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    entity.setId(rs.getLong(1));
+                }
+            }
+            return entity;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while saving Patient", e);
+        }
+    }
+
+    @Override
+    public Patient update(Patient entity) {
+        final String sql = """
+                UPDATE patients
+                SET nom = ?, prenom = ?, adresse = ?, telephone = ?, email = ?,
+                    dateNaissance = ?, dateCreation = ?, sexe = ?, assurance = ?
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, entity.getNom());
+            ps.setString(2, entity.getPrenom());
+            ps.setString(3, entity.getAdresse());
+            ps.setString(4, entity.getTelephone());
+            ps.setString(5, entity.getEmail());
+            if (entity.getDateNaissance() != null) {
+                ps.setDate(6, java.sql.Date.valueOf(entity.getDateNaissance()));
+            } else {
+                ps.setNull(6, java.sql.Types.DATE);
+            }
+            if (entity.getDateCreation() != null) {
+                ps.setTimestamp(7, java.sql.Timestamp.valueOf(entity.getDateCreation()));
+            } else {
+                ps.setNull(7, java.sql.Types.TIMESTAMP);
+            }
+            if (entity.getSexe() != null) {
+                ps.setString(8, entity.getSexe().name());
+            } else {
+                ps.setNull(8, java.sql.Types.VARCHAR);
+            }
+            if (entity.getAssurance() != null) {
+                ps.setString(9, entity.getAssurance().name());
+            } else {
+                ps.setNull(9, java.sql.Types.VARCHAR);
+            }
+            ps.setLong(10, entity.getId());
+
+            ps.executeUpdate();
+            return entity;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while updating Patient with id " + entity.getId(), e);
+        }
+    }
+
+    @Override
+    public Patient findById(Long id) {
+        final String sql = "SELECT * FROM patients WHERE id = ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return RowMappers.mapPatient(rs);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while finding Patient with id " + id, e);
+        }
+    }
+
+    @Override
+    public List<Patient> findAll() {
+        final String sql = "SELECT * FROM patients";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            List<Patient> patients = new ArrayList<>();
+            while (rs.next()) {
+                patients.add(RowMappers.mapPatient(rs));
+            }
+            return patients;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while finding all Patients", e);
+        }
+    }
+
+    @Override
+    public boolean deleteById(Long id) {
+        final String sql = "DELETE FROM patients WHERE id = ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            int affected = ps.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while deleting Patient with id " + id, e);
+        }
+    }
+}
+
+package ma.oralCare.repository.patient.impl;
+
+import ma.oralCare.entities.patient.Patient;
+import ma.oralCare.repository.common.RowMappers;
+import ma.oralCare.repository.patient.PatientRepository;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PatientRepositoryImpl implements PatientRepository {
+
+    private static final String TABLE_NAME = "patients";
+
+    private final Connection connection;
+
+    public PatientRepositoryImpl(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
     public Patient save(Patient patient) {
-        String sql = "INSERT INTO patient " +
+        String sql = "INSERT INTO " + TABLE_NAME + " " +
                 "(nom, prenom, adresse, telephone, email, dateNaissance, dateCreation, sexe, assurance) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, patient.getNom());
             ps.setString(2, patient.getPrenom());
@@ -35,207 +206,111 @@ public class PatientRepositoryImpl implements PatientRepository {
                 ps.setNull(6, Types.DATE);
             }
 
-            ps.setTimestamp(7, patient.getDateCreation() != null ?
-                    Timestamp.valueOf(patient.getDateCreation()) :
-                    Timestamp.valueOf(java.time.LocalDateTime.now()));
+            if (patient.getDateCreation() != null) {
+                ps.setTimestamp(7, Timestamp.valueOf(patient.getDateCreation()));
+            } else {
+                ps.setTimestamp(7, Timestamp.valueOf(java.time.LocalDateTime.now()));
+            }
 
             ps.setString(8, patient.getSexe() != null ? patient.getSexe().name() : null);
             ps.setString(9, patient.getAssurance() != null ? patient.getAssurance().name() : null);
 
             int affectedRows = ps.executeUpdate();
-            if (affectedRows == 0) throw new SQLException("Créer patient a échoué, aucune ligne affectée.");
+            if (affectedRows == 0) {
+                throw new SQLException("Creating patient failed, no rows affected.");
+            }
 
             try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) patient.setId(generatedKeys.getLong(1));
-                else throw new SQLException("Créer patient a échoué, aucun ID généré.");
+                if (generatedKeys.next()) {
+                    patient.setId(generatedKeys.getLong(1));
+                } else {
+                    throw new SQLException("Creating patient failed, no ID obtained.");
+                }
             }
+
             return patient;
-
         } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Error saving Patient", e);
         }
     }
 
     @Override
-    public Patient findById(Long id) {
-        String sql = "SELECT * FROM patient WHERE id = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return RowMappers.mapPatient(rs);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    public Patient update(Patient patient) {
+        String sql = "UPDATE " + TABLE_NAME + " SET " +
+                "nom = ?, prenom = ?, adresse = ?, telephone = ?, email = ?, " +
+                "dateNaissance = ?, sexe = ?, assurance = ? " +
+                "WHERE id = ?";
 
-    @Override
-    public List<Patient> findAll() {
-        String sql = "SELECT * FROM patient";
-        List<Patient> patients = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) patients.add(RowMappers.mapPatient(rs));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return patients;
-    }
-
-    @Override
-    public void update(Patient patient) {
-        String sql = "UPDATE patient SET nom=?, prenom=?, adresse=?, telephone=?, email=?, dateNaissance=?, sexe=?, assurance=? WHERE id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, patient.getNom());
             ps.setString(2, patient.getPrenom());
             ps.setString(3, patient.getAdresse());
             ps.setString(4, patient.getTelephone());
             ps.setString(5, patient.getEmail());
-            ps.setDate(6, patient.getDateNaissance() != null ? Date.valueOf(patient.getDateNaissance()) : null);
+
+            if (patient.getDateNaissance() != null) {
+                ps.setDate(6, Date.valueOf(patient.getDateNaissance()));
+            } else {
+                ps.setNull(6, Types.DATE);
+            }
+
             ps.setString(7, patient.getSexe() != null ? patient.getSexe().name() : null);
             ps.setString(8, patient.getAssurance() != null ? patient.getAssurance().name() : null);
             ps.setLong(9, patient.getId());
+
             ps.executeUpdate();
+            return patient;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error updating Patient", e);
         }
     }
 
     @Override
-    public void delete(Patient patient) {
-        deleteById(patient.getId());
-    }
+    public Patient findById(Long id) {
+        String sql = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
 
-    @Override
-    public void deleteById(Long id) {
-        String sql = "DELETE FROM patient WHERE id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, id);
-            ps.executeUpdate();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return RowMappers.mapPatient(rs);
+                }
+            }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error finding Patient by id", e);
         }
+        return null;
     }
 
     @Override
-    public boolean existsById(Long id) {
-        String sql = "SELECT COUNT(*) FROM patient WHERE id = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getInt(1) > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
+    public List<Patient> findAll() {
+        String sql = "SELECT * FROM " + TABLE_NAME;
+        List<Patient> result = new ArrayList<>();
 
-    @Override
-    public long count() {
-        String sql = "SELECT COUNT(*) FROM patient";
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) return rs.getLong(1);
+            while (rs.next()) {
+                result.add(RowMappers.mapPatient(rs));
+            }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error finding all Patients", e);
         }
-        return 0;
-    }
 
-    @Override
-    public void deleteAll() {
-        String sql = "DELETE FROM patient";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Implémentation des méthodes spécifiques à PatientRepository
-    @Override
-    public List<Patient> findByNom(String nom) {
-        return searchByField("nom", nom);
-    }
-
-    @Override
-    public List<Patient> findByTelephone(String telephone) {
-        return searchByField("telephone", telephone);
-    }
-
-    @Override
-    public List<Patient> findByDateNaissance(LocalDate date) {
-        return searchByField("dateNaissance", date);
-    }
-
-    @Override
-    public List<Patient> findBySexe(ma.oralCare.entities.enums.Sexe sexe) {
-        return searchByField("sexe", sexe != null ? sexe.name() : null);
-    }
-
-    @Override
-    public List<Patient> findByAssurance(ma.oralCare.entities.enums.Assurance assurance) {
-        return searchByField("assurance", assurance != null ? assurance.name() : null);
-    }
-
-    @Override
-    public List<Patient> findByAdresseContaining(String adresse) {
-        String sql = "SELECT * FROM patient WHERE adresse LIKE ?";
-        List<Patient> result = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, "%" + adresse + "%");
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) result.add(RowMappers.mapPatient(rs));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
         return result;
     }
 
     @Override
-    public List<Patient> findByDateNaissanceBetween(LocalDate debut, LocalDate fin) {
-        String sql = "SELECT * FROM patient WHERE dateNaissance BETWEEN ? AND ?";
-        List<Patient> result = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setDate(1, Date.valueOf(debut));
-            ps.setDate(2, Date.valueOf(fin));
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) result.add(RowMappers.mapPatient(rs));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
+    public boolean deleteById(Long id) {
+        String sql = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
 
-    @Override
-    public List<Patient> searchPatients(String keyword) {
-        String sql = "SELECT * FROM patient WHERE nom LIKE ? OR prenom LIKE ? OR adresse LIKE ?";
-        List<Patient> result = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            String kw = "%" + keyword + "%";
-            ps.setString(1, kw);
-            ps.setString(2, kw);
-            ps.setString(3, kw);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) result.add(RowMappers.mapPatient(rs));
+            ps.setLong(1, id);
+            int affected = ps.executeUpdate();
+            return affected > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error deleting Patient by id", e);
         }
-        return result;
-    }
-
-    private List<Patient> searchByField(String field, Object value) {
-        String sql = "SELECT * FROM patient WHERE " + field + " = ?";
-        List<Patient> result = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (value instanceof LocalDate) ps.setDate(1, Date.valueOf((LocalDate) value));
-            else ps.setObject(1, value);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) result.add(RowMappers.mapPatient(rs));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return result;
     }
 }
+
+

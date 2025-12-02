@@ -1,40 +1,38 @@
-package ma.oralCare.repository.consultation.impl;
+package ma.oralCare.repository.notification.impl;
 
-import ma.oralCare.entities.consultation.Ordonnance;
+import ma.oralCare.entities.notification.Role;
 import ma.oralCare.repository.common.RowMappers;
-import ma.oralCare.repository.consultation.api.OrdonnanceRepository;
+import ma.oralCare.repository.notification.api.RoleRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OrdonnanceRepositoryImpl implements OrdonnanceRepository {
+public class RoleRepositoryImpl implements RoleRepository {
 
     private final Connection connection;
 
-    public OrdonnanceRepositoryImpl(Connection connection) {
+    public RoleRepositoryImpl(Connection connection) {
         this.connection = connection;
     }
 
     @Override
-    public Ordonnance save(Ordonnance entity) {
+    public Role save(Role entity) {
         final String sql = """
-                INSERT INTO ordonnances
-                    (date)
+                INSERT INTO roles
+                    (libelle)
                 VALUES (?)
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            LocalDate date = entity.getDate();
-            if (date != null) {
-                ps.setDate(1, java.sql.Date.valueOf(date));
+            if (entity.getLibelle() != null) {
+                ps.setString(1, entity.getLibelle().name());
             } else {
-                ps.setNull(1, java.sql.Types.DATE);
+                ps.setNull(1, java.sql.Types.VARCHAR);
             }
 
             ps.executeUpdate();
@@ -46,78 +44,77 @@ public class OrdonnanceRepositoryImpl implements OrdonnanceRepository {
             }
             return entity;
         } catch (SQLException e) {
-            throw new RuntimeException("Error while saving Ordonnance", e);
+            throw new RuntimeException("Error while saving Role", e);
         }
     }
 
     @Override
-    public Ordonnance update(Ordonnance entity) {
+    public Role update(Role entity) {
         final String sql = """
-                UPDATE ordonnances
-                SET date = ?
+                UPDATE roles
+                SET libelle = ?
                 WHERE id = ?
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            LocalDate date = entity.getDate();
-            if (date != null) {
-                ps.setDate(1, java.sql.Date.valueOf(date));
+            if (entity.getLibelle() != null) {
+                ps.setString(1, entity.getLibelle().name());
             } else {
-                ps.setNull(1, java.sql.Types.DATE);
+                ps.setNull(1, java.sql.Types.VARCHAR);
             }
             ps.setLong(2, entity.getId());
 
             ps.executeUpdate();
             return entity;
         } catch (SQLException e) {
-            throw new RuntimeException("Error while updating Ordonnance with id " + entity.getId(), e);
+            throw new RuntimeException("Error while updating Role with id " + entity.getId(), e);
         }
     }
 
     @Override
-    public Ordonnance findById(Long id) {
-        final String sql = "SELECT * FROM ordonnances WHERE id = ?";
+    public Role findById(Long id) {
+        final String sql = "SELECT * FROM roles WHERE id = ?";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return RowMappers.mapOrdonnance(rs);
+                    return RowMappers.mapRole(rs);
                 }
                 return null;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Error while finding Ordonnance with id " + id, e);
+            throw new RuntimeException("Error while finding Role with id " + id, e);
         }
     }
 
     @Override
-    public List<Ordonnance> findAll() {
-        final String sql = "SELECT * FROM ordonnances";
+    public List<Role> findAll() {
+        final String sql = "SELECT * FROM roles";
 
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            List<Ordonnance> result = new ArrayList<>();
+            List<Role> result = new ArrayList<>();
             while (rs.next()) {
-                result.add(RowMappers.mapOrdonnance(rs));
+                result.add(RowMappers.mapRole(rs));
             }
             return result;
         } catch (SQLException e) {
-            throw new RuntimeException("Error while finding all Ordonnances", e);
+            throw new RuntimeException("Error while finding all Roles", e);
         }
     }
 
     @Override
     public boolean deleteById(Long id) {
-        final String sql = "DELETE FROM ordonnances WHERE id = ?";
+        final String sql = "DELETE FROM roles WHERE id = ?";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, id);
             int affected = ps.executeUpdate();
             return affected > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("Error while deleting Ordonnance with id " + id, e);
+            throw new RuntimeException("Error while deleting Role with id " + id, e);
         }
     }
 }

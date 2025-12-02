@@ -1,29 +1,61 @@
 package ma.oralCare.repository.common;
-import ma.oralCare.entities.patient.*;
-import ma.oralCare.entities.acte.*;
-import ma.oralCare.entities.agenda.*;
-import ma.oralCare.entities.cabinet.*;
-import ma.oralCare.entities.common.*;
-import ma.oralCare.entities.consultation.*;
-import ma.oralCare.entities.dossier.*;
-import ma.oralCare.entities.facture.*;
-import ma.oralCare.entities.staff.*;
-import ma.oralCare.entities.enums.*;
-import ma.oralCare.entities.rdv.*;
+
+import ma.oralCare.entities.acte.Acte;
+import ma.oralCare.entities.agenda.AgendaMensuel;
+import ma.oralCare.entities.cabinet.CabinetMedicale;
+import ma.oralCare.entities.cabinet.Charges;
+import ma.oralCare.entities.cabinet.Revenues;
+import ma.oralCare.entities.cabinet.Statistiques;
+import ma.oralCare.entities.common.Adresse;
+import ma.oralCare.entities.consultation.Certificat;
+import ma.oralCare.entities.consultation.Consultation;
+import ma.oralCare.entities.consultation.InterventionMedecin;
+import ma.oralCare.entities.consultation.Ordonnance;
+import ma.oralCare.entities.dossier.DossierMedicale;
+import ma.oralCare.entities.enums.Assurance;
+import ma.oralCare.entities.enums.CategorieAntecedent;
+import ma.oralCare.entities.enums.EnPromo;
+import ma.oralCare.entities.enums.FormeMedicament;
+import ma.oralCare.entities.enums.Mois;
+import ma.oralCare.entities.enums.NiveauDeRisque;
+import ma.oralCare.entities.enums.NotificationPriorite;
+import ma.oralCare.entities.enums.NotificationTitre;
+import ma.oralCare.entities.enums.NotificationType;
+import ma.oralCare.entities.enums.RoleLibelle;
+import ma.oralCare.entities.enums.Sexe;
+import ma.oralCare.entities.enums.StatistiqueCategorie;
+import ma.oralCare.entities.enums.StatutConsultation;
+import ma.oralCare.entities.enums.StatutFacture;
+import ma.oralCare.entities.enums.StatutRDV;
+import ma.oralCare.entities.enums.StatutSituationFinanciere;
+import ma.oralCare.entities.facture.Facture;
+import ma.oralCare.entities.facture.SituationFinanciere;
+import ma.oralCare.entities.medicament.Medicament;
+import ma.oralCare.entities.medicament.Prescription;
+import ma.oralCare.entities.notification.Notification;
+import ma.oralCare.entities.notification.Role;
+import ma.oralCare.entities.patient.Antecedent;
+import ma.oralCare.entities.patient.Patient;
+import ma.oralCare.entities.rdv.RDV;
+import ma.oralCare.entities.staff.Admin;
+import ma.oralCare.entities.staff.Medecin;
+import ma.oralCare.entities.staff.Secretaire;
+import ma.oralCare.entities.staff.Staff;
+import ma.oralCare.entities.staff.Utilisateur;
+
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 
-
 public final class RowMappers {
-    private RowMappers(){}
+
+    private RowMappers() {
+    }
 
     public static Patient mapPatient(ResultSet rs) throws SQLException {
         Patient patient = new Patient();
-
         patient.setId(rs.getLong("id"));
         patient.setNom(rs.getString("nom"));
         patient.setPrenom(rs.getString("prenom"));
@@ -31,17 +63,16 @@ public final class RowMappers {
         patient.setTelephone(rs.getString("telephone"));
         patient.setEmail(rs.getString("email"));
 
-        var dn = rs.getDate("dateNaissance");
+        Date dn = rs.getDate("dateNaissance");
         if (dn != null) {
             patient.setDateNaissance(dn.toLocalDate());
         }
 
-        var dc = rs.getTimestamp("dateCreation");
+        Timestamp dc = rs.getTimestamp("dateCreation");
         if (dc != null) {
             patient.setDateCreation(dc.toLocalDateTime());
         }
 
-        // --- ENUMS ---
         String sexeValue = rs.getString("sexe");
         if (sexeValue != null) {
             patient.setSexe(Sexe.valueOf(sexeValue));
@@ -51,79 +82,56 @@ public final class RowMappers {
         if (assuranceValue != null) {
             patient.setAssurance(Assurance.valueOf(assuranceValue));
         }
-        patient.setAntecedents(null); // chargé plus tard dans RepositoryImpl
 
+        patient.setAntecedents(null);
         return patient;
+    }
 
+    public static Antecedent mapAntecedent(ResultSet rs) throws SQLException {
+        Antecedent antecedent = new Antecedent();
+        antecedent.setId(rs.getLong("id"));
+        antecedent.setNom(rs.getString("nom"));
+
+        String catValue = rs.getString("categorie");
+        if (catValue != null) {
+            antecedent.setCategorie(CategorieAntecedent.valueOf(catValue));
+        }
+
+        String risqueValue = rs.getString("niveauRisque");
+        if (risqueValue != null) {
+            antecedent.setNiveauRisque(NiveauDeRisque.valueOf(risqueValue));
+        }
+
+        antecedent.setPatients(null);
+        return antecedent;
     }
 
     public static Acte mapActe(ResultSet rs) throws SQLException {
         Acte acte = new Acte();
-
-        // ----- ATTRIBUTS DE ACTE -----
         acte.setId(rs.getLong("id"));
         acte.setLibelle(rs.getString("libelle"));
         acte.setCategorie(rs.getString("categorie"));
         acte.setPrixDeBase(rs.getDouble("prixDeBase"));
-
-        // interventionsMedecin sera chargé plus tard dans son repository
         acte.setInterventionsMedecin(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        acte.setIdEntite(rs.getLong("idEntite"));
-
-        var dc = rs.getDate("dateCreation");
-        if (dc != null) acte.setDateCreation(dc.toLocalDate());
-
-        var dm = rs.getTimestamp("dateDerniereModification");
-        if (dm != null) acte.setDateDerniereModification(dm.toLocalDateTime());
-
-        acte.setCreePar(rs.getString("creePar"));
-        acte.setModifiePar(rs.getString("modifiePar"));
-
         return acte;
     }
 
     public static AgendaMensuel mapAgendaMensuel(ResultSet rs) throws SQLException {
-
         AgendaMensuel agenda = new AgendaMensuel();
-
-        // ----- CHAMPS PROPRES A AgendaMensuel -----
         agenda.setId(rs.getLong("id"));
 
-        // Enum Mois
         String moisValue = rs.getString("mois");
         if (moisValue != null) {
             agenda.setMois(Mois.valueOf(moisValue));
         }
 
-        // La liste joursNonDisponible sera chargée plus tard dans AgendaRepositoryImpl
         agenda.setJoursNonDisponible(null);
-
-        // Le médécin sera chargé plus tard
         agenda.setMedecin(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        agenda.setIdEntite(rs.getLong("idEntite"));
-
-        var dc = rs.getDate("dateCréation");
-        if (dc != null) agenda.setDateCreation(dc.toLocalDate());
-
-        var dm = rs.getTimestamp("dateDerniereModification");
-        if (dm != null) agenda.setDateDerniereModification(dm.toLocalDateTime());
-
-        agenda.setCreePar(rs.getString("creePar"));
-        agenda.setModifiePar(rs.getString("modifiePar"));
-
         return agenda;
     }
 
-
     public static CabinetMedicale mapCabinetMedicale(ResultSet rs) throws SQLException {
-
         CabinetMedicale cab = new CabinetMedicale();
-
-        // ----- CHAMPS PROPRES A CabinetMedicale -----
         cab.setId(rs.getLong("id"));
         cab.setNom(rs.getString("nom"));
         cab.setEmail(rs.getString("email"));
@@ -135,106 +143,51 @@ public final class RowMappers {
         cab.setInstagram(rs.getString("instagram"));
         cab.setFacebook(rs.getString("facebook"));
         cab.setDescription(rs.getString("description"));
-
-        // Adresse sera chargée plus tard (table séparée → clé étrangère)
         cab.setAdresse(null);
-
-        // Relations 1..n chargées plus tard dans RepositoryImpl
         cab.setCharges(null);
         cab.setRevenues(null);
         cab.setStatistiques(null);
         cab.setStaff(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        cab.setIdEntite(rs.getLong("idEntite"));
-
-        var dc = rs.getDate("dateCréation");
-        if (dc != null) cab.setDateCreation(dc.toLocalDate());
-
-        var dm = rs.getTimestamp("dateDerniereModification");
-        if (dm != null) cab.setDateDerniereModification(dm.toLocalDateTime());
-
-        cab.setCreePar(rs.getString("creePar"));
-        cab.setModifiePar(rs.getString("modifiePar"));
-
         return cab;
     }
 
     public static Charges mapCharges(ResultSet rs) throws SQLException {
-
         Charges charge = new Charges();
-
-        // ----- CHAMPS PROPRES À Charges -----
         charge.setId(rs.getLong("id"));
         charge.setTitre(rs.getString("titre"));
         charge.setDescription(rs.getString("description"));
         charge.setMontant(rs.getDouble("montant"));
 
-        var dt = rs.getTimestamp("date");
+        Timestamp dt = rs.getTimestamp("date");
         if (dt != null) {
             charge.setDate(dt.toLocalDateTime());
         }
 
-        // Relation CabinetMedicale chargée plus tard
         charge.setCabinetMedicale(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        charge.setIdEntite(rs.getLong("idEntite"));
-
-        var dc = rs.getDate("dateCréation");
-        if (dc != null) charge.setDateCreation(dc.toLocalDate());
-
-        var dm = rs.getTimestamp("dateDerniereModification");
-        if (dm != null) charge.setDateDerniereModification(dm.toLocalDateTime());
-
-        charge.setCreePar(rs.getString("creePar"));
-        charge.setModifiePar(rs.getString("modifiePar"));
-
         return charge;
     }
 
     public static Revenues mapRevenues(ResultSet rs) throws SQLException {
-
         Revenues rev = new Revenues();
-
-        // ----- CHAMPS PROPRES A Revenues -----
         rev.setId(rs.getLong("id"));
         rev.setTitre(rs.getString("titre"));
         rev.setDescription(rs.getString("description"));
         rev.setMontant(rs.getDouble("montant"));
 
-        var dt = rs.getTimestamp("date");
+        Timestamp dt = rs.getTimestamp("date");
         if (dt != null) {
             rev.setDate(dt.toLocalDateTime());
         }
 
-        // Relation CabinetMedicale chargée plus tard
         rev.setCabinetMedicale(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        rev.setIdEntite(rs.getLong("idEntite"));
-
-        var dc = rs.getDate("dateCréation");
-        if (dc != null) rev.setDateCreation(dc.toLocalDate());
-
-        var dm = rs.getTimestamp("dateDerniereModification");
-        if (dm != null) rev.setDateDerniereModification(dm.toLocalDateTime());
-
-        rev.setCreePar(rs.getString("creePar"));
-        rev.setModifiePar(rs.getString("modifiePar"));
-
         return rev;
     }
 
     public static Statistiques mapStatistiques(ResultSet rs) throws SQLException {
-
         Statistiques stat = new Statistiques();
-
-        // ----- CHAMPS PROPRES A Statistiques -----
         stat.setId(rs.getLong("id"));
         stat.setNom(rs.getString("nom"));
 
-        // Enum : StatistiqueCategorie
         String catValue = rs.getString("categorie");
         if (catValue != null) {
             stat.setCategorie(StatistiqueCategorie.valueOf(catValue));
@@ -242,387 +195,146 @@ public final class RowMappers {
 
         stat.setChiffre(rs.getDouble("chiffre"));
 
-        var dc = rs.getDate("dateCalcul");
+        Date dc = rs.getDate("dateCalcul");
         if (dc != null) {
             stat.setDateCalcul(dc.toLocalDate());
         }
 
-        // Relation CabinetMedicale → chargée plus tard
         stat.setCabinetMedicale(null);
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        stat.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCreation");
-        if (dcreat != null) stat.setDateCreation(dcreat.toLocalDate());
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) stat.setDateDerniereModification(dmod.toLocalDateTime());
-
-        stat.setCreePar(rs.getString("creePar"));
-        stat.setModifiePar(rs.getString("modifiePar"));
-
         return stat;
     }
 
     public static Adresse mapAdresse(ResultSet rs) throws SQLException {
-
         Adresse adr = new Adresse();
-
         adr.setNumero(rs.getString("numero"));
         adr.setRue(rs.getString("rue"));
         adr.setCodePostal(rs.getString("codePostal"));
         adr.setVille(rs.getString("ville"));
         adr.setPays(rs.getString("pays"));
         adr.setComplement(rs.getString("complement"));
-
         return adr;
     }
 
     public static Certificat mapCertificat(ResultSet rs) throws SQLException {
-
         Certificat cert = new Certificat();
-
-        // ----- CHAMPS PROPRES A Certificat -----
         cert.setId(rs.getLong("id"));
 
-        var db = rs.getDate("dateDebut");
-        if (db != null) cert.setDateDebut(db.toLocalDate());
+        Date db = rs.getDate("dateDebut");
+        if (db != null) {
+            cert.setDateDebut(db.toLocalDate());
+        }
 
-        var df = rs.getDate("dateFin");
-        if (df != null) cert.setDateFin(df.toLocalDate());
+        Date df = rs.getDate("dateFin");
+        if (df != null) {
+            cert.setDateFin(df.toLocalDate());
+        }
 
         cert.setDuree(rs.getInt("duree"));
         cert.setNoteMedecin(rs.getString("noteMedecin"));
-
-        // Relation : DossierMedicale (chargée plus tard)
-        Long dossierId = rs.getLong("dossierMedicale_id");
-        if (!rs.wasNull()) {
-            DossierMedicale d = new DossierMedicale();
-            d.setId(dossierId);
-            cert.setDossierMedicale(d);
-        } else {
-            cert.setDossierMedicale(null);
-        }
-
-        // Relation : Consultation (chargée plus tard)
-        Long consId = rs.getLong("consultation_id");
-        if (!rs.wasNull()) {
-            Consultation c = new Consultation();
-            c.setId(consId);
-            cert.setConsultation(c);
-        } else {
-            cert.setConsultation(null);
-        }
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        cert.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCréation");
-        if (dcreat != null) cert.setDateCreation(dcreat.toLocalDate());
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) cert.setDateDerniereModification(dmod.toLocalDateTime());
-
-        cert.setCreePar(rs.getString("creePar"));
-        cert.setModifiePar(rs.getString("modifiePar"));
-
+        cert.setDossierMedicale(null);
+        cert.setConsultation(null);
         return cert;
     }
 
     public static Consultation mapConsultation(ResultSet rs) throws SQLException {
-
         Consultation c = new Consultation();
-
-        // ----- CHAMPS PROPRES À Consultation -----
         c.setId(rs.getLong("id"));
 
-        var d = rs.getDate("date");
+        Date d = rs.getDate("date");
         if (d != null) {
             c.setDate(d.toLocalDate());
         }
 
-        // Enum : StatutConsultation
         String st = rs.getString("statut");
         if (st != null) {
             c.setStatut(StatutConsultation.valueOf(st));
         }
 
         c.setObservationMedecin(rs.getString("observationMedecin"));
-
-
-        // ----- RELATIONS : CHARGÉES PLUS TARD -----
-
-        // DossierMedicale (FK : dossierMedicale_id)
-        Long dossierId = rs.getLong("dossierMedicale_id");
-        if (!rs.wasNull()) {
-            DossierMedicale dm = new DossierMedicale();
-            dm.setId(dossierId);
-            c.setDossierMedicale(dm);
-        } else {
-            c.setDossierMedicale(null);
-        }
-
-        // Certificat (FK : certificat_id)
-        Long certId = rs.getLong("certificat_id");
-        if (!rs.wasNull()) {
-            Certificat cert = new Certificat();
-            cert.setId(certId);
-            c.setCertificat(cert);
-        } else {
-            c.setCertificat(null);
-        }
-
-        // Listes : chargées séparément (lazy)
+        c.setDossierMedicale(null);
         c.setInterventionsMedecin(null);
         c.setFactures(null);
         c.setOrdonnances(null);
+        c.setCertificat(null);
         c.setRendezVous(null);
-
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        c.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCreation");
-        if (dcreat != null) c.setDateCreation(dcreat.toLocalDate());
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) c.setDateDerniereModification(dmod.toLocalDateTime());
-
-        c.setCreePar(rs.getString("creePar"));
-        c.setModifiePar(rs.getString("modifiePar"));
-
         return c;
     }
 
     public static InterventionMedecin mapInterventionMedecin(ResultSet rs) throws SQLException {
-
         InterventionMedecin im = new InterventionMedecin();
-
-        // ----- CHAMPS PROPRES À InterventionMedecin -----
         im.setId(rs.getLong("id"));
         im.setPrixDePatient(rs.getDouble("prixDePatient"));
 
-        Integer nd = rs.getInt("numDent");
+        int nd = rs.getInt("numDent");
         if (!rs.wasNull()) {
             im.setNumDent(nd);
         } else {
             im.setNumDent(null);
         }
 
-        // ----- RELATIONS : CONSULTATION (FK : consultation_id) -----
-        Long cId = rs.getLong("consultation_id");
-        if (!rs.wasNull()) {
-            Consultation c = new Consultation();
-            c.setId(cId);
-            im.setConsultation(c);
-        } else {
-            im.setConsultation(null);
-        }
-
-        // ----- RELATIONS : ACTE (FK : acte_id) -----
-        Long acteId = rs.getLong("acte_id");
-        if (!rs.wasNull()) {
-            Acte a = new Acte();
-            a.setId(acteId);
-            im.setActe(a);
-        } else {
-            im.setActe(null);
-        }
-
-        // ----- ATTRIBUTS HÉRITÉS DE BaseEntity -----
-        im.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCréation");
-        if (dcreat != null) {
-            im.setDateCreation(dcreat.toLocalDate());
-        }
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) {
-            im.setDateDerniereModification(dmod.toLocalDateTime());
-        }
-
-        im.setCreePar(rs.getString("creePar"));
-        im.setModifiePar(rs.getString("modifiePar"));
-
+        im.setConsultation(null);
+        im.setActe(null);
         return im;
     }
 
     public static Ordonnance mapOrdonnance(ResultSet rs) throws SQLException {
-
         Ordonnance o = new Ordonnance();
-
-        // ----- CHAMPS PROPRES À Ordonnance -----
         o.setId(rs.getLong("id"));
 
-        var d = rs.getDate("date");
+        Date d = rs.getDate("date");
         if (d != null) {
             o.setDate(d.toLocalDate());
         }
 
-        // ----- RELATION : DOSSIER MEDICALE (FK : dossierMedicale_id) -----
-        Long dossierId = rs.getLong("dossierMedicale_id");
-        if (!rs.wasNull()) {
-            DossierMedicale dm = new DossierMedicale();
-            dm.setId(dossierId);
-            o.setDossierMedicale(dm);
-        } else {
-            o.setDossierMedicale(null);
-        }
-
-        // ----- RELATION : CONSULTATION (FK : consultation_id) -----
-        Long consultationId = rs.getLong("consultation_id");
-        if (!rs.wasNull()) {
-            Consultation c = new Consultation();
-            c.setId(consultationId);
-            o.setConsultation(c);
-        } else {
-            o.setConsultation(null);
-        }
-
-        // Liste des prescriptions → chargée plus tard
+        o.setDossierMedicale(null);
         o.setPrescriptions(null);
-
-        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
-        o.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCreation");
-        if (dcreat != null) {
-            o.setDateCreation(dcreat.toLocalDate());
-        }
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) {
-            o.setDateDerniereModification(dmod.toLocalDateTime());
-        }
-
-        o.setCreePar(rs.getString("creePar"));
-        o.setModifiePar(rs.getString("modifiePar"));
-
+        o.setConsultation(null);
         return o;
     }
 
     public static DossierMedicale mapDossierMedicale(ResultSet rs) throws SQLException {
-
         DossierMedicale dm = new DossierMedicale();
-
-        // ----- CHAMPS PROPRES À DossierMedicale -----
         dm.setId(rs.getLong("id"));
 
-        var d = rs.getDate("dateDeCreation");
+        Date d = rs.getDate("dateDeCreation");
         if (d != null) {
             dm.setDateDeCreation(d.toLocalDate());
         }
 
-        // ----- RELATION : Patient (FK : patient_id) -----
-        Long patientId = rs.getLong("patient_id");
-        if (!rs.wasNull()) {
-            Patient p = new Patient();
-            p.setId(patientId);
-            dm.setPatient(p);
-        } else {
-            dm.setPatient(null);
-        }
-
-        // ----- RELATION : Medecin (FK : medecin_id / id_user) -----
-        Long medId = rs.getLong("medecin_id");
-        if (!rs.wasNull()) {
-            Medecin m = new Medecin();
-            m.setId(medId);
-            dm.setMedecin(m);
-        } else {
-            dm.setMedecin(null);
-        }
-
-        // ----- RELATION : Situation Financière (FK : situationFinanciere_id) -----
-        Long idSF = rs.getLong("situationFinanciere_id");
-        if (!rs.wasNull()) {
-            SituationFinanciere sf = new SituationFinanciere();
-            sf.setId(idSF);
-            dm.setSituationFinanciere(sf);
-        } else {
-            dm.setSituationFinanciere(null);
-        }
-
-        // ----- LISTES : chargées plus tard -----
+        dm.setPatient(null);
         dm.setConsultations(null);
         dm.setOrdonnances(null);
         dm.setCertificats(null);
+        dm.setSituationFinanciere(null);
         dm.setRendezVous(null);
-
-        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
-        dm.setIdEntite(rs.getLong("idEntite"));
-
-        var dcreat = rs.getDate("dateCreation");
-        if (dcreat != null) dm.setDateCreation(dcreat.toLocalDate());
-
-        var dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) dm.setDateDerniereModification(dmod.toLocalDateTime());
-
-        dm.setCreePar(rs.getString("creePar"));
-        dm.setModifiePar(rs.getString("modifiePar"));
-
+        dm.setMedecin(null);
         return dm;
     }
 
-    public static Staff mapStaff(ResultSet rs) throws SQLException {
+    public static SituationFinanciere mapSituationFinanciere(ResultSet rs) throws SQLException {
+        SituationFinanciere sf = new SituationFinanciere();
+        sf.setId(rs.getLong("id"));
+        sf.setTotaleDesActes(rs.getDouble("totaleDesActes"));
+        sf.setTotalePaye(rs.getDouble("totalePaye"));
+        sf.setCredit(rs.getDouble("credit"));
 
-        Staff staff = new Staff();
-
-        // Champs hérités de Utilisateur
-        staff.setId(rs.getLong("id"));
-        staff.setNom(rs.getString("nom"));
-        staff.setEmail(rs.getString("email"));
-        staff.setCin(rs.getString("cin"));
-        staff.setTel(rs.getString("tel"));
-
-        String sexeValue = rs.getString("sexe");
-        if (sexeValue != null) {
-            staff.setSexe(Sexe.valueOf(sexeValue)); // Assure-toi que la colonne contient MALE/FEMALE/OTHER
+        String statut = rs.getString("statut");
+        if (statut != null) {
+            sf.setStatut(StatutSituationFinanciere.valueOf(statut));
         }
 
-        staff.setLogin(rs.getString("login"));
-        staff.setMotDePass(rs.getString("mot_de_pass"));
-
-        Date lastLogin = rs.getDate("last_login_date");
-        if (lastLogin != null) {
-            staff.setLastLoginDate(lastLogin.toLocalDate());
+        String enPromo = rs.getString("enPromo");
+        if (enPromo != null) {
+            sf.setEnPromo(EnPromo.valueOf(enPromo));
         }
 
-        Date dateNaissance = rs.getDate("date_naissance");
-        if (dateNaissance != null) {
-            staff.setDateNaissance(dateNaissance.toLocalDate());
-        }
-
-        // Champs spécifiques à Staff
-        staff.setSalaire(rs.getDouble("salaire"));
-        staff.setPrime(rs.getDouble("prime"));
-
-        Date recrutement = rs.getDate("date_recrutement");
-        if (recrutement != null) {
-            staff.setDateRecrutement(recrutement.toLocalDate());
-        }
-
-        staff.setSoldeConge(rs.getInt("solde_conge"));
-
-        // Cabinet médical (clé étrangère)
-        Long cabinetId = rs.getLong("cabinet_id");
-        if (cabinetId != null && cabinetId != 0) {
-            CabinetMedicale cab = new CabinetMedicale();
-            cab.setId(cabinetId);
-            staff.setCabinetMedicale(cab);
-        }
-
-        // Les rôles et notifications doivent être chargés ailleurs (requêtes séparées)
-        return staff;
+        sf.setDossierMedicale(null);
+        sf.setFactures(null);
+        return sf;
     }
 
     public static Facture mapFacture(ResultSet rs) throws SQLException {
-
         Facture f = new Facture();
-
-        // ----- CHAMPS PROPRES À Facture -----
         f.setId(rs.getLong("id"));
         f.setTotaleFacture(rs.getDouble("totaleFacture"));
         f.setTotalePaye(rs.getDouble("totalePaye"));
@@ -638,57 +350,296 @@ public final class RowMappers {
             f.setDateFacture(dt.toLocalDateTime());
         }
 
-        // ----- RELATION : SITUATION FINANCIERE (FK : situationFinanciere_id) -----
-        Long sfId = rs.getLong("situationFinanciere_id");
-        if (!rs.wasNull()) {
-            SituationFinanciere sf = new SituationFinanciere();
-            sf.setId(sfId);
-            f.setSituationFinanciere(sf);
-        } else {
-            f.setSituationFinanciere(null);
-        }
-
-        // ----- RELATION : CONSULTATION (FK : consultation_id) -----
-        Long consId = rs.getLong("consultation_id");
-        if (!rs.wasNull()) {
-            Consultation c = new Consultation();
-            c.setId(consId);
-            f.setConsultation(c);
-        } else {
-            f.setConsultation(null);
-        }
-
-        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
-        f.setIdEntite(rs.getLong("idEntite"));
-
-        Date dcreat = rs.getDate("dateCreation");
-        if (dcreat != null) {
-            f.setDateCreation(dcreat.toLocalDate());
-        }
-
-        Timestamp dmod = rs.getTimestamp("dateDerniereModification");
-        if (dmod != null) {
-            f.setDateDerniereModification(dmod.toLocalDateTime());
-        }
-
-        f.setCreePar(rs.getString("creePar"));
-        f.setModifiePar(rs.getString("modifiePar"));
-
+        f.setSituationFinanciere(null);
+        f.setConsultation(null);
         return f;
+    }
+
+    public static Medicament mapMedicament(ResultSet rs) throws SQLException {
+        Medicament m = new Medicament();
+        m.setId(rs.getLong("id"));
+        m.setNom(rs.getString("nom"));
+        m.setLaboratoire(rs.getString("laboratoire"));
+        m.setType(rs.getString("type"));
+
+        String forme = rs.getString("forme");
+        if (forme != null) {
+            m.setForme(FormeMedicament.valueOf(forme));
+        }
+
+        m.setRemboursable(rs.getObject("remboursable") != null ? rs.getBoolean("remboursable") : null);
+        m.setPrixUnitaire(rs.getDouble("prixUnitaire"));
+        m.setDescription(rs.getString("description"));
+        m.setPrescriptions(null);
+        return m;
+    }
+
+    public static Prescription mapPrescription(ResultSet rs) throws SQLException {
+        Prescription p = new Prescription();
+        p.setId(rs.getLong("id"));
+        p.setQuantite(rs.getInt("quantite"));
+        p.setFrequence(rs.getString("frequence"));
+        p.setDureeEnJours(rs.getInt("dureeEnJours"));
+        p.setOrdonnance(null);
+        p.setMedicament(null);
+        return p;
+    }
+
+    public static Notification mapNotification(ResultSet rs) throws SQLException {
+        Notification n = new Notification();
+        n.setId(rs.getLong("id"));
+
+        String titre = rs.getString("titre");
+        if (titre != null) {
+            n.setTitre(NotificationTitre.valueOf(titre));
+        }
+
+        n.setMessage(rs.getString("message"));
+
+        Date d = rs.getDate("date");
+        if (d != null) {
+            n.setDate(d.toLocalDate());
+        }
+
+        Time t = rs.getTime("time");
+        if (t != null) {
+            n.setTime(t.toLocalTime());
+        }
+
+        String type = rs.getString("type");
+        if (type != null) {
+            n.setType(NotificationType.valueOf(type));
+        }
+
+        String priorite = rs.getString("priorite");
+        if (priorite != null) {
+            n.setPriorite(NotificationPriorite.valueOf(priorite));
+        }
+
+        n.setUtilisateurs(null);
+        return n;
+    }
+
+    public static Role mapRole(ResultSet rs) throws SQLException {
+        Role r = new Role();
+        r.setId(rs.getLong("id"));
+
+        String libelle = rs.getString("libelle");
+        if (libelle != null) {
+            r.setLibelle(RoleLibelle.valueOf(libelle));
+        }
+
+        r.setPrivileges(null);
+        r.setUtilisateurs(null);
+        return r;
+    }
+
+    public static Utilisateur mapUtilisateur(ResultSet rs) throws SQLException {
+        Utilisateur u = new Utilisateur();
+        u.setId(rs.getLong("id"));
+        u.setNom(rs.getString("nom"));
+        u.setEmail(rs.getString("email"));
+        u.setCin(rs.getString("cin"));
+        u.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            u.setSexe(Sexe.valueOf(sexeValue));
+        }
+
+        u.setLogin(rs.getString("login"));
+        u.setMotDePass(rs.getString("motDePass"));
+
+        Date lastLogin = rs.getDate("lastLoginDate");
+        if (lastLogin != null) {
+            u.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("dateNaissance");
+        if (dateNaissance != null) {
+            u.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        u.setAdresse(null);
+        u.setRoles(null);
+        u.setNotifications(null);
+        return u;
+    }
+
+    public static Staff mapStaff(ResultSet rs) throws SQLException {
+        Staff staff = new Staff();
+        staff.setId(rs.getLong("id"));
+        staff.setNom(rs.getString("nom"));
+        staff.setEmail(rs.getString("email"));
+        staff.setCin(rs.getString("cin"));
+        staff.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            staff.setSexe(Sexe.valueOf(sexeValue));
+        }
+
+        staff.setLogin(rs.getString("login"));
+        staff.setMotDePass(rs.getString("motDePass"));
+
+        Date lastLogin = rs.getDate("lastLoginDate");
+        if (lastLogin != null) {
+            staff.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("dateNaissance");
+        if (dateNaissance != null) {
+            staff.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        staff.setSalaire(rs.getDouble("salaire"));
+        staff.setPrime(rs.getDouble("prime"));
+
+        Date recrutement = rs.getDate("dateRecrutement");
+        if (recrutement != null) {
+            staff.setDateRecrutement(recrutement.toLocalDate());
+        }
+
+        staff.setSoldeConge(rs.getInt("soldeConge"));
+        staff.setCabinetMedicale(null);
+        staff.setAdresse(null);
+        staff.setRoles(null);
+        staff.setNotifications(null);
+        return staff;
+    }
+
+    public static Medecin mapMedecin(ResultSet rs) throws SQLException {
+        Medecin medecin = new Medecin();
+        medecin.setId(rs.getLong("id"));
+        medecin.setNom(rs.getString("nom"));
+        medecin.setEmail(rs.getString("email"));
+        medecin.setCin(rs.getString("cin"));
+        medecin.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            medecin.setSexe(Sexe.valueOf(sexeValue));
+        }
+
+        medecin.setLogin(rs.getString("login"));
+        medecin.setMotDePass(rs.getString("motDePass"));
+
+        Date lastLogin = rs.getDate("lastLoginDate");
+        if (lastLogin != null) {
+            medecin.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("dateNaissance");
+        if (dateNaissance != null) {
+            medecin.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        medecin.setSalaire(rs.getDouble("salaire"));
+        medecin.setPrime(rs.getDouble("prime"));
+
+        Date recrutement = rs.getDate("dateRecrutement");
+        if (recrutement != null) {
+            medecin.setDateRecrutement(recrutement.toLocalDate());
+        }
+
+        medecin.setSoldeConge(rs.getInt("soldeConge"));
+        medecin.setSpecialite(rs.getString("specialite"));
+        medecin.setAgendaMensuel(null);
+        medecin.setDossierMedicaux(null);
+        medecin.setCabinetMedicale(null);
+        medecin.setAdresse(null);
+        medecin.setRoles(null);
+        medecin.setNotifications(null);
+        return medecin;
+    }
+
+    public static Secretaire mapSecretaire(ResultSet rs) throws SQLException {
+        Secretaire secretaire = new Secretaire();
+        secretaire.setId(rs.getLong("id"));
+        secretaire.setNom(rs.getString("nom"));
+        secretaire.setEmail(rs.getString("email"));
+        secretaire.setCin(rs.getString("cin"));
+        secretaire.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            secretaire.setSexe(Sexe.valueOf(sexeValue));
+        }
+
+        secretaire.setLogin(rs.getString("login"));
+        secretaire.setMotDePass(rs.getString("motDePass"));
+
+        Date lastLogin = rs.getDate("lastLoginDate");
+        if (lastLogin != null) {
+            secretaire.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("dateNaissance");
+        if (dateNaissance != null) {
+            secretaire.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        secretaire.setSalaire(rs.getDouble("salaire"));
+        secretaire.setPrime(rs.getDouble("prime"));
+
+        Date recrutement = rs.getDate("dateRecrutement");
+        if (recrutement != null) {
+            secretaire.setDateRecrutement(recrutement.toLocalDate());
+        }
+
+        secretaire.setSoldeConge(rs.getInt("soldeConge"));
+        secretaire.setNumCNSS(rs.getString("numCNSS"));
+        secretaire.setCommission(rs.getDouble("commission"));
+        secretaire.setCabinetMedicale(null);
+        secretaire.setAdresse(null);
+        secretaire.setRoles(null);
+        secretaire.setNotifications(null);
+        return secretaire;
+    }
+
+    public static Admin mapAdmin(ResultSet rs) throws SQLException {
+        Admin admin = new Admin();
+        admin.setId(rs.getLong("id"));
+        admin.setNom(rs.getString("nom"));
+        admin.setEmail(rs.getString("email"));
+        admin.setCin(rs.getString("cin"));
+        admin.setTel(rs.getString("tel"));
+
+        String sexeValue = rs.getString("sexe");
+        if (sexeValue != null) {
+            admin.setSexe(Sexe.valueOf(sexeValue));
+        }
+
+        admin.setLogin(rs.getString("login"));
+        admin.setMotDePass(rs.getString("motDePass"));
+
+        Date lastLogin = rs.getDate("lastLoginDate");
+        if (lastLogin != null) {
+            admin.setLastLoginDate(lastLogin.toLocalDate());
+        }
+
+        Date dateNaissance = rs.getDate("dateNaissance");
+        if (dateNaissance != null) {
+            admin.setDateNaissance(dateNaissance.toLocalDate());
+        }
+
+        admin.setPermissions(null);
+        admin.setAdresse(null);
+        admin.setRoles(null);
+        admin.setNotifications(null);
+        return admin;
     }
 
     public static RDV mapRDV(ResultSet rs) throws SQLException {
         RDV rdv = new RDV();
-
-        // ----- CHAMPS PROPRES À RDV -----
         rdv.setId(rs.getLong("id"));
 
-        var date = rs.getDate("date");
+        Date date = rs.getDate("date");
         if (date != null) {
             rdv.setDate(date.toLocalDate());
         }
 
-        var heure = rs.getTime("heure");
+        Time heure = rs.getTime("heure");
         if (heure != null) {
             rdv.setHeure(heure.toLocalTime());
         }
@@ -701,68 +652,10 @@ public final class RowMappers {
         }
 
         rdv.setNoteMedecin(rs.getString("noteMedecin"));
-
-        // ----- RELATIONS -----
-
-        // Consultation (FK : consultation_id)
-        Long consId = rs.getLong("consultation_id");
-        if (!rs.wasNull()) {
-            Consultation c = new Consultation();
-            c.setId(consId);
-            rdv.setConsultation(c);
-        } else {
-            rdv.setConsultation(null);
-        }
-
-        // DossierMedicale (FK : dossierMedicale_id)
-        Long dossierId = rs.getLong("dossierMedicale_id");
-        if (!rs.wasNull()) {
-            DossierMedicale dm = new DossierMedicale();
-            dm.setId(dossierId);
-            rdv.setDossierMedicale(dm);
-        } else {
-            rdv.setDossierMedicale(null);
-        }
-
-        // ----- CHAMPS HÉRITÉS DE BaseEntity -----
-        rdv.setIdEntite(rs.getLong("idEntite"));
-
-        var dateCreation = rs.getDate("dateCreation");
-        if (dateCreation != null) {
-            rdv.setDateCreation(dateCreation.toLocalDate());
-        }
-
-        var dateModif = rs.getTimestamp("dateDerniereModification");
-        if (dateModif != null) {
-            rdv.setDateDerniereModification(dateModif.toLocalDateTime());
-        }
-
-        rdv.setCreePar(rs.getString("creePar"));
-        rdv.setModifiePar(rs.getString("modifiePar"));
-
+        rdv.setConsultation(null);
+        rdv.setDossierMedicale(null);
         return rdv;
     }
-
-    public static Antecedent mapAntecedent(ResultSet rs) throws SQLException {
-        Antecedent antecedent = new Antecedent();
-
-        antecedent.setId(rs.getLong("id"));
-        antecedent.setNom(rs.getString("nom"));
-
-        String catValue = rs.getString("categorie");
-        if (catValue != null) {
-            antecedent.setCategorie(CategorieAntecedent.valueOf(catValue));
-        }
-
-        String risqueValue = rs.getString("niveauRisque");
-        if (risqueValue != null) {
-            antecedent.setNiveauRisque(NiveauDeRisque.valueOf(risqueValue)); // ou fromLibelle si base contient le libellé
-        }
-
-        antecedent.setPatients(null); // chargement plus tard
-
-        return antecedent;
-    }
-
-
 }
+
+
