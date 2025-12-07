@@ -4,13 +4,15 @@ import java.util.List;
 
 public interface CrudRepository<T, ID> {
 
-    T save(T entity);
-
-    T update(T entity);
+    List<T> findAll();
 
     T findById(ID id);
 
-    List<T> findAll();
+    void create(T newElement);
 
-    boolean deleteById(ID id);
+    void update(T newValuesElement);
+
+    void delete(T patient);
+
+    void deleteById(ID id);
 }
