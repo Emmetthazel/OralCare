@@ -135,7 +135,7 @@ public final class DbTestUtils {
         """);
     }
 
-    private static void seedPatients() {
+    public static void seedPatients() {
         execute("""
             INSERT INTO patients (id_patient, nom, date_de_naissance, sexe, assurance)
             VALUES
@@ -144,7 +144,7 @@ public final class DbTestUtils {
         """);
     }
 
-    private static void seedDossiersMedicaux() {
+    public static void seedDossiersMedicaux() {
         execute("""
             INSERT INTO dossiers_medicaux (id_dm, date_de_creation, id_patient)
             VALUES (1,CURDATE(),1),(2,CURDATE(),2);
