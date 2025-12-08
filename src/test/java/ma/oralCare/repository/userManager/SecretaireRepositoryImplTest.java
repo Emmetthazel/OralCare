@@ -1,4 +1,4 @@
 package ma.oralCare.repository.userManager;
 
-public class SecretaireRepositoryTest {
+public class SecretaireRepositoryImplTest {
 }
