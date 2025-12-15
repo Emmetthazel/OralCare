@@ -1,8 +1,6 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant la categorie d une statistique
- */
+
 public enum StatistiqueCategorie {
     REVENUE("Revenus"),
     EXPENSE("Dépenses"),
@@ -15,9 +13,6 @@ public enum StatistiqueCategorie {
     StatistiqueCategorie(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

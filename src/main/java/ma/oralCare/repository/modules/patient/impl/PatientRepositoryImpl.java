@@ -1,14 +1,11 @@
-package ma.oralCare.repository.modules.patient.impl;
+package ma.oralCare.repository.modules.patient.impl; // Notez le changement de package
 
-import ma.oralCare.entities.enums.Assurance;
-import ma.oralCare.entities.patient.Antecedent;
-import ma.oralCare.entities.patient.Patient;
-import ma.oralCare.repository.modules.patient.api.PatientRepository;
-import ma.oralCare.conf.SessionFactory; // Supposé exister
-import ma.oralCare.repository.common.RowMappers; // Supposé contenir mapPatient, mapAntecedent
+import ma.oralCare.entities.patient.*; // Notez le changement de package
+import ma.oralCare.conf.SessionFactory; // Assurez-vous que ce package est correct
+import ma.oralCare.repository.common.RowMappers; // Notez le changement de package
+import ma.oralCare.repository.modules.patient.api.*; // Assurez-vous que ce package est correct
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,137 +13,250 @@ import java.util.Optional;
 
 public class PatientRepositoryImpl implements PatientRepository {
 
-    // --- 1. Opérations CRUD de base (UC: Ajouter, Modifier, Supprimer Patient) ---
-
     @Override
     public List<Patient> findAll() {
-        // UC: Consulter liste patients
-        String sql = "SELECT * FROM Patient ORDER BY nom, prenom";
+        String sql = "SELECT\n" +
+                "            p.nom, p.prenom, p.date_de_naissance, p.email, p.sexe, p.adresse, p.telephone, p.assurance,\n" +
+                "            b.id_entite, \n" +
+                "            b.date_creation,\n" +
+                "            b.date_derniere_modification,\n" +
+                "            b.cree_par,\n" +
+                "            b.modifie_par\n" +
+                "        FROM Patient p JOIN BaseEntity b ON p.id_entite = b.id_entite\n" +
+                "        ORDER BY p.id_entite";
         List<Patient> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) out.add(RowMappers.mapPatient(rs));
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération de tous les patients", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de findAll patients.", e); }
         return out;
     }
 
     @Override
-    public Patient findById(Long id) {
-        // UC: Consulter Patient
-        String sql = "SELECT * FROM Patient WHERE id = ?";
+    public Optional<Patient> findById(Long id) {
+        String sql = "SELECT\n" +
+                "                p.nom, p.prenom, p.date_de_naissance, p.email, p.sexe, p.adresse, p.telephone, p.assurance,\n" +
+                "                b.id_entite, /* <--- L'ID DOIT VENIR DE BASEENTITY */\n" +
+                "                b.date_creation,\n" +
+                "                b.date_derniere_modification,\n" +
+                "                b.cree_par,\n" +
+                "                b.modifie_par\n" +
+                "            FROM Patient p JOIN BaseEntity b ON p.id_entite = b.id_entite\n" +
+                "            WHERE p.id_entite = ?";
+
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
+
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return RowMappers.mapPatient(rs);
-                return null;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche du patient par ID", e);
-        }
-    }
-
-    @Override
-    public void create(Patient newElement) {
-        // UC: Ajouter Patient
-        if (newElement == null) return;
-        String sql = "INSERT INTO Patient (nom, prenom, adresse, telephone, email, dateNaissance, dateCreation, sexe, assurance) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            ps.setString(1, newElement.getNom());
-            ps.setString(2, newElement.getPrenom());
-            ps.setString(3, newElement.getAdresse()); // L'adresse est stockée comme String (selon l'entité Patient fournie)
-            ps.setString(4, newElement.getTelephone());
-            ps.setString(5, newElement.getEmail());
-            ps.setDate(6, newElement.getDateNaissance() != null ? Date.valueOf(newElement.getDateNaissance()) : null);
-            ps.setTimestamp(7, newElement.getDateCreation() != null ? Timestamp.valueOf(newElement.getDateCreation()) : Timestamp.valueOf(LocalDateTime.now()));
-            ps.setString(8, newElement.getSexe() != null ? newElement.getSexe().name() : null);
-            ps.setString(9, newElement.getAssurance() != null ? newElement.getAssurance().name() : null);
-
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        newElement.setId(generatedKeys.getLong(1));
-                    }
+                if (rs.next()) {
+                    return Optional.of(RowMappers.mapPatient(rs));
                 }
+                return Optional.empty();
+
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la création du patient", e);
+            throw new RuntimeException("Erreur lors de findById patient.", e);
         }
     }
 
     @Override
-    public void update(Patient newValuesElement) {
-        // UC: Modifier Patient
-        if (newValuesElement == null || newValuesElement.getId() == null) return;
-        String sql = "UPDATE Patient SET nom = ?, prenom = ?, adresse = ?, telephone = ?, email = ?, dateNaissance = ?, sexe = ?, assurance = ? WHERE id = ?";
+    public void create(Patient p) {
+        Long baseId = null;
+        Connection c = null;
 
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now); // Convertir pour l'insertion SQL
+        // cree_par est BIGINT
+        String sqlBase = "INSERT INTO BaseEntity(date_creation, date_derniere_modification, cree_par) VALUES(?, ?, ?)";
 
-            ps.setString(1, newValuesElement.getNom());
-            ps.setString(2, newValuesElement.getPrenom());
-            ps.setString(3, newValuesElement.getAdresse());
-            ps.setString(4, newValuesElement.getTelephone());
-            ps.setString(5, newValuesElement.getEmail());
-            ps.setDate(6, newValuesElement.getDateNaissance() != null ? Date.valueOf(newValuesElement.getDateNaissance()) : null);
-            ps.setString(7, newValuesElement.getSexe() != null ? newValuesElement.getSexe().name() : null);
-            ps.setString(8, newValuesElement.getAssurance() != null ? newValuesElement.getAssurance().name() : null);
-            ps.setLong(9, newValuesElement.getId());
+        String sqlPatient = """
+            INSERT INTO Patient(id_entite, nom, prenom, date_de_naissance, email, sexe, adresse, telephone, assurance)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
 
-            ps.executeUpdate();
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false); // Début de la transaction
+
+            // 1. Insertion dans BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase, Statement.RETURN_GENERATED_KEYS)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                psBase.setNull(2, Types.TIMESTAMP);
+
+                // UTILISATION DE BIGINT (p.getCreePar() doit retourner Long)
+                if (p.getCreePar() != null) psBase.setLong(3, p.getCreePar());
+                else psBase.setNull(3, Types.BIGINT);
+
+                psBase.executeUpdate();
+
+                try (ResultSet keys = psBase.getGeneratedKeys()) {
+                    if (keys.next()) baseId = keys.getLong(1);
+                    else throw new SQLException("Échec de la récupération de l'ID BaseEntity.");
+                }
+                p.setIdEntite(baseId);
+                p.setDateCreation(now);
+                p.setDateDerniereModification(null);
+                p.setModifiePar(null);
+            }
+
+            // 2. Insertion dans Patient
+            try (PreparedStatement psPatient = c.prepareStatement(sqlPatient)) {
+                psPatient.setLong(1, p.getIdEntite()); // Utilise l'ID généré par BaseEntity
+                psPatient.setString(2, p.getNom());
+                psPatient.setString(3, p.getPrenom());
+                if (p.getDateDeNaissance() != null) psPatient.setDate(4, Date.valueOf(p.getDateDeNaissance()));
+                else psPatient.setNull(4, Types.DATE);
+                // Le champ email n'est pas mappé dans mapPatient, mais il doit être là
+                psPatient.setString(5, p.getEmail());
+                psPatient.setString(6, p.getSexe().name());
+                psPatient.setString(7, p.getAdresse());
+                psPatient.setString(8, p.getTelephone());
+                psPatient.setString(9, p.getAssurance().name());
+                psPatient.executeUpdate();
+            }
+
+            c.commit(); // Validation
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la mise à jour du patient", e);
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la création du patient.", e);
+
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
         }
     }
 
+    /**
+     * Met à jour le patient dans BaseEntity et Patient.
+     */
     @Override
-    public void delete(Patient patient) {
-        if (patient != null && patient.getId() != null) deleteById(patient.getId());
+    public void update(Patient p) {
+        Connection c = null;
+
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now);
+
+        String sqlBase = "UPDATE BaseEntity SET date_derniere_modification=?, modifie_par=? WHERE id_entite=?";
+        String sqlPatient = """
+            UPDATE Patient SET nom=?, prenom=?, date_de_naissance=?, email=?, 
+                   sexe=?, adresse=?, telephone=?, assurance=? 
+            WHERE id_entite=?
+            """;
+
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false); // Début de la transaction
+
+            // 1. Mise à jour de BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                // UTILISATION DE BIGINT (p.getModifiePar() doit retourner Long)
+                if (p.getModifiePar() != null) psBase.setLong(2, p.getModifiePar());
+                else psBase.setNull(2, Types.BIGINT);
+
+                psBase.setLong(3, p.getIdEntite()); // Utilise getIdEntite()
+                psBase.executeUpdate();
+                p.setDateDerniereModification(now);
+            }
+
+            // 2. Mise à jour de Patient
+            try (PreparedStatement psPatient = c.prepareStatement(sqlPatient)) {
+                psPatient.setString(1, p.getNom());
+                psPatient.setString(2, p.getPrenom());
+                if (p.getDateDeNaissance() != null) psPatient.setDate(3, Date.valueOf(p.getDateDeNaissance()));
+                else psPatient.setNull(3, Types.DATE);
+                psPatient.setString(4, p.getEmail());
+                psPatient.setString(5, p.getSexe().name());
+                psPatient.setString(6, p.getAdresse());
+                psPatient.setString(7, p.getTelephone());
+                psPatient.setString(8, p.getAssurance().name());
+                psPatient.setLong(9, p.getIdEntite());
+                psPatient.executeUpdate();
+            }
+
+            c.commit(); // Validation
+
+        } catch (SQLException e) {
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error on update.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la mise à jour du patient.", e);
+
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
+        }
     }
 
+
+    @Override
+    public void delete(Patient p) { if (p != null) deleteById(p.getIdEntite()); } // Utilise getIdEntite()
+
+    /**
+     * Supprime le patient en supprimant la ligne dans BaseEntity.
+     * ON DELETE CASCADE supprime les lignes dans Patient et Patient_Antecedent.
+     */
     @Override
     public void deleteById(Long id) {
-        // UC: Supprimer Patient
-        String sql = "DELETE FROM Patient WHERE id = ?";
+        String sql = "DELETE FROM BaseEntity WHERE id_entite = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la suppression du patient par ID", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la suppression du patient par ID.", e); }
     }
 
-    // --- 2. Implémentation des Méthodes de Recherche Spécifiques ---
+    // -------- Extras (Recherche et Pagination) --------
 
     @Override
-    public List<Patient> findByNomAndPrenom(String nom, String prenom) {
-        String sql = "SELECT * FROM Patient WHERE nom LIKE ? AND prenom LIKE ? ORDER BY nom, prenom";
-        List<Patient> out = new ArrayList<>();
+    public Optional<Patient> findByEmail(String email) {
+        String sql = "SELECT \n" +
+                "            p.nom, p.prenom, p.date_de_naissance, p.email, p.sexe, p.adresse, p.telephone, p.assurance,\n" +
+                "            b.id_entite, /* <--- L'ID DOIT VENIR DE BASEENTITY */\n" +
+                "            b.date_creation, \n" +
+                "            b.date_derniere_modification, \n" +
+                "            b.cree_par, \n" +
+                "            b.modifie_par \n" +
+                "        FROM Patient p \n" +
+                "        JOIN BaseEntity b ON p.id_entite = b.id_entite \n" +
+                "        WHERE p.email = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, "%" + nom + "%");
-            ps.setString(2, "%" + prenom + "%");
+            ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(RowMappers.mapPatient(rs));
+                if (rs.next()) return Optional.of(RowMappers.mapPatient(rs));
+                return Optional.empty();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche par nom et prénom", e);
-        }
-        return out;
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de findByEmail.", e); }
     }
 
     @Override
     public Optional<Patient> findByTelephone(String telephone) {
-        String sql = "SELECT * FROM Patient WHERE telephone = ?";
+        String sql = "SELECT \n" +
+                "            p.nom, p.prenom, p.date_de_naissance, p.email, p.sexe, p.adresse, p.telephone, p.assurance,\n" +
+                "            b.id_entite, \n" +
+                "            b.date_creation, \n" +
+                "            b.date_derniere_modification, \n" +
+                "            b.cree_par, \n" +
+                "            b.modifie_par \n" +
+                "        FROM Patient p \n" +
+                "        JOIN BaseEntity b ON p.id_entite = b.id_entite \n" +
+                "        WHERE p.telephone = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, telephone);
@@ -154,49 +264,103 @@ public class PatientRepositoryImpl implements PatientRepository {
                 if (rs.next()) return Optional.of(RowMappers.mapPatient(rs));
                 return Optional.empty();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche par téléphone", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de findByTelephone.", e); }
     }
 
     @Override
-    public List<Patient> findByDateNaissanceBefore(LocalDate dateNaissance) {
-        String sql = "SELECT * FROM Patient WHERE dateNaissance < ?";
+    public List<Patient> searchByNomPrenom(String keyword) {
+        String sql = "SELECT * FROM Patient WHERE nom LIKE ? OR prenom LIKE ? ORDER BY nom, prenom";
         List<Patient> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setDate(1, Date.valueOf(dateNaissance));
+            String like = "%" + keyword + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(RowMappers.mapPatient(rs));
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche par date de naissance (avant)", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de searchByNomPrenom.", e); }
         return out;
     }
 
     @Override
-    public List<Patient> findByAssurance(Assurance assurance) {
-        String sql = "SELECT * FROM Patient WHERE assurance = ?";
+    public boolean existsById(Long id) {
+        String sql = "SELECT 1 FROM Patient WHERE id_entite = ?";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de existsById.", e); }
+    }
+
+    @Override
+    public long count() {
+        String sql = "SELECT COUNT(*) FROM Patient";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getLong(1);
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de count().", e); }
+    }
+
+    @Override
+    public List<Patient> findPage(int limit, int offset) {
+        String sql = "SELECT * FROM Patient ORDER BY id_entite LIMIT ? OFFSET ?";
         List<Patient> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, assurance.name());
+            ps.setInt(1, limit);
+            ps.setInt(2, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(RowMappers.mapPatient(rs));
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche par assurance", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de findPage.", e); }
         return out;
     }
 
-    // --- 3. Implémentation des Méthodes d'Association (Antécédents) ---
+    // -------- Liaison Many-to-Many (Patient_Antecedent) --------
 
     @Override
-    public List<Antecedent> findAntecedentsByPatientId(Long patientId) {
-        // Supposons une table de jointure Patient_Antecedent (many-to-many)
-        String sql = "SELECT A.* FROM Antecedent A JOIN Patient_Antecedent PA ON A.id = PA.antecedent_id WHERE PA.patient_id = ?";
+    public void addAntecedentToPatient(Long patientId, Long antecedentId) {
+        String sql = "INSERT INTO Patient_Antecedent(patient_id, antecedent_id) VALUES (?,?) ON DUPLICATE KEY UPDATE patient_id=patient_id";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, patientId);
+            ps.setLong(2, antecedentId);
+            ps.executeUpdate();
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de addAntecedentToPatient.", e); }
+    }
+
+    @Override
+    public void removeAntecedentFromPatient(Long patientId, Long antecedentId) {
+        String sql = "DELETE FROM Patient_Antecedent WHERE patient_id=? AND antecedent_id=?";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, patientId);
+            ps.setLong(2, antecedentId);
+            ps.executeUpdate();
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de removeAntecedentFromPatient.", e); }
+    }
+
+    @Override
+    public void removeAllAntecedentsFromPatient(Long patientId) {
+        String sql = "DELETE FROM Patient_Antecedent WHERE patient_id=?";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, patientId);
+            ps.executeUpdate();
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de removeAllAntecedentsFromPatient.", e); }
+    }
+
+    @Override
+    public List<Antecedent> getAntecedentsOfPatient(Long patientId) {
+        String sql = """
+            SELECT a.* FROM Antecedent a 
+            JOIN Patient_Antecedent pa ON pa.antecedent_id = a.id_entite
+            WHERE pa.patient_id = ?
+            ORDER BY a.categorie, a.niveau_de_risque, a.nom
+            """;
         List<Antecedent> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -204,39 +368,25 @@ public class PatientRepositoryImpl implements PatientRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(RowMappers.mapAntecedent(rs));
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération des antécédents pour le patient ID: " + patientId, e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de getAntecedentsOfPatient.", e); }
         return out;
     }
 
     @Override
-    public void addAntecedentToPatient(Long patientId, Long antecedentId) {
-        // UC: Affecter Antécédent
-        String sql = "INSERT INTO Patient_Antecedent (patient_id, antecedent_id) VALUES (?, ?)";
+    public List<Patient> getPatientsByAntecedent(Long antecedentId) {
+        String sql = """
+            SELECT p.* FROM Patient p JOIN Patient_Antecedent pa ON pa.patient_id = p.id_entite
+            WHERE pa.antecedent_id = ?
+            ORDER BY p.nom, p.prenom
+            """;
+        List<Patient> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, patientId);
-            ps.setLong(2, antecedentId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            // Ignorer si l'association existe déjà (contrainte d'unicité)
-            if (!e.getMessage().contains("duplicate key")) {
-                throw new RuntimeException("Erreur lors de l'ajout de l'antécédent au patient", e);
+            ps.setLong(1, antecedentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(RowMappers.mapPatient(rs));
             }
-        }
-    }
-
-    @Override
-    public void removeAntecedentFromPatient(Long patientId, Long antecedentId) {
-        String sql = "DELETE FROM Patient_Antecedent WHERE patient_id = ? AND antecedent_id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, patientId);
-            ps.setLong(2, antecedentId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la suppression de l'antécédent du patient", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de getPatientsByAntecedent.", e); }
+        return out;
     }
 }

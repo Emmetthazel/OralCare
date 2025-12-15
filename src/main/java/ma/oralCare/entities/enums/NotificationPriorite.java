@@ -1,8 +1,9 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant la priorite d une notification
- */
+
+import lombok.Getter;
+
+@Getter
 public enum NotificationPriorite {
     HIGH("Haute"),
     MEDIUM("Moyenne"),
@@ -13,9 +14,6 @@ public enum NotificationPriorite {
     NotificationPriorite(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

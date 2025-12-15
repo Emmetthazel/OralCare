@@ -1,50 +1,33 @@
 package ma.oralCare.entities.cabinet;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import ma.oralCare.entities.common.BaseEntity;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import ma.oralCare.entities.base.BaseEntity;
 import ma.oralCare.entities.enums.StatistiqueCategorie;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Entite representant les statistiques dans le systeme OralCare
- */
-@Data
+
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Statistiques extends BaseEntity {
+@EqualsAndHashCode(callSuper = true)
 
-    private Long id;
+public class Statistiques extends BaseEntity {
 
     private String nom;
 
     private StatistiqueCategorie categorie;
 
-    private Double chiffre;
+    private BigDecimal chiffre;
 
     private LocalDate dateCalcul;
 
-    /**
-     * Cabinet medical associe a cette statistique
-     */
     private CabinetMedicale cabinetMedicale;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Statistiques)) return false;
-        Statistiques that = (Statistiques) o;
-        return id != null && id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
 
     @Override
     public String toString() {
@@ -57,7 +40,7 @@ public class Statistiques extends BaseEntity {
           dateCalcul = %s
         }
         """.formatted(
-                id,
+                getIdEntite(),
                 nom,
                 categorie,
                 chiffre,

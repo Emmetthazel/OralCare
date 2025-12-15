@@ -1,8 +1,9 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant la forme pharmaceutique d un Médicament
- */
+import lombok.Getter;
+
+@Getter
+
 public enum FormeMedicament {
     TABLET("Comprimé"),
     CAPSULE("Gélule"),
@@ -17,9 +18,6 @@ public enum FormeMedicament {
     FormeMedicament(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

@@ -1,8 +1,9 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le type d assurance d un patient
- */
+import lombok.Getter;
+
+@Getter
+
 public enum Assurance {
     CNOPS("CNOPS"),
     CNSS("CNSS"),
@@ -14,9 +15,6 @@ public enum Assurance {
     Assurance(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

@@ -1,8 +1,10 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le sexe d une personne
- */
+
+import lombok.Getter;
+
+@Getter
+
 public enum Sexe {
     MALE("Masculin"),
     FEMALE("Féminin"),
@@ -13,9 +15,6 @@ public enum Sexe {
     Sexe(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

@@ -1,8 +1,9 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le titre d une notification
- */
+import lombok.Getter;
+
+@Getter
+
 public enum NotificationTitre {
     APPOINTMENT_REMINDER("Rappel de rendez-vous"),
     PAYMENT_DUE("Paiement en retard"),
@@ -15,9 +16,6 @@ public enum NotificationTitre {
     NotificationTitre(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

@@ -1,252 +1,305 @@
 package ma.oralCare.repository.modules.agenda.impl;
 
-import ma.oralCare.entities.rdv.RDV;
-import ma.oralCare.entities.enums.StatutRDV;
-import ma.oralCare.repository.modules.agenda.api.RDVRepository;
 import ma.oralCare.conf.SessionFactory;
+import ma.oralCare.entities.agenda.RDV;
+import ma.oralCare.entities.enums.StatutRDV;
 import ma.oralCare.repository.common.RowMappers;
+import ma.oralCare.repository.modules.agenda.api.RDVRepository;
 
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// NOTE: RowMappers.mapRDV(rs) est supposé exister.
 public class RDVRepositoryImpl implements RDVRepository {
 
-    // --- Mappeur d'RDV (Exemple de base) ---
-    // Dans une implémentation réelle, ceci serait plus complexe (récupération des objets liés)
-    private RDV mapRDV(ResultSet rs) throws SQLException {
-        // Mappage des champs simples
-        RDV rdv = RDV.builder()
-                .id(rs.getLong("id"))
-                .date(rs.getDate("date").toLocalDate())
-                .heure(rs.getTime("heure").toLocalTime())
-                .motif(rs.getString("motif"))
-                .statut(StatutRDV.valueOf(rs.getString("statut")))
-                .noteMedecin(rs.getString("noteMedecin"))
-                .build();
+    // --- Requêtes SQL de Base ---
+    private static final String SQL_INSERT_BASE = "INSERT INTO BaseEntity(date_creation, cree_par) VALUES(?, ?)";
+    private static final String SQL_UPDATE_BASE = "UPDATE BaseEntity SET date_derniere_modification=?, modifie_par=? WHERE id_entite=?";
+    private static final String SQL_DELETE_BASE = "DELETE FROM BaseEntity WHERE id_entite = ?";
 
-        // Pour un mapping complet, il faudrait charger consultation et dossierMedicale ici
-        // Cependant, dans un Repository JDBC, on se contente souvent du champ principal et des IDs FK.
-        return rdv;
+    // REQUÊTES AJUSTÉES : SEULS dossier_medicale_id et consultation_id sont utilisés
+    private static final String SQL_INSERT_RDV = "INSERT INTO RDV (id_entite, dossier_medicale_id, consultation_id, date, heure, motif, statut, note_medecin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String SQL_UPDATE_RDV = "UPDATE RDV SET dossier_medicale_id=?, consultation_id=?, date=?, heure=?, motif=?, statut=?, note_medecin=? WHERE id_entite=?";
+
+    private static final String BASE_SELECT_RDV_SQL = """
+        SELECT r.id_entite, r.dossier_medicale_id, r.consultation_id, r.date, r.heure, r.motif, r.statut, r.note_medecin,
+               b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+        FROM RDV r
+        JOIN BaseEntity b ON r.id_entite = b.id_entite
+    """;
+
+    // =========================================================================
+    //                            CRUD
+    // =========================================================================
+
+    @Override
+    public void create(RDV rdv) {
+        Long baseId = null;
+        Connection c = null;
+        LocalDateTime now = LocalDateTime.now();
+
+        Long dossierId = (rdv.getDossierMedicale() != null) ? rdv.getDossierMedicale().getIdEntite() : null;
+        Long consultationId = (rdv.getConsultation() != null) ? rdv.getConsultation().getIdEntite() : null;
+
+        if (dossierId == null) {
+            throw new IllegalArgumentException("Erreur de création RDV: DossierMedicale doit être non nul.");
+        }
+
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // 1. BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(SQL_INSERT_BASE, Statement.RETURN_GENERATED_KEYS)) {
+                psBase.setTimestamp(1, Timestamp.valueOf(now));
+                psBase.setLong(2, rdv.getCreePar());
+                psBase.executeUpdate();
+                try (ResultSet keys = psBase.getGeneratedKeys()) {
+                    if (keys.next()) baseId = keys.getLong(1);
+                    else throw new SQLException("Échec de la récupération de l'ID BaseEntity.");
+                }
+                rdv.setIdEntite(baseId);
+                rdv.setDateCreation(now);
+            }
+
+            // 2. RDV
+            try (PreparedStatement psRdv = c.prepareStatement(SQL_INSERT_RDV)) {
+                int i = 1;
+                psRdv.setLong(i++, rdv.getIdEntite());
+
+                // IDs de relation
+                psRdv.setLong(i++, dossierId);
+                psRdv.setObject(i++, consultationId); // Peut être NULL
+
+                // Champs RDV
+                psRdv.setDate(i++, Date.valueOf(rdv.getDate()));
+                psRdv.setTime(i++, Time.valueOf(rdv.getHeure()));
+                psRdv.setString(i++, rdv.getMotif());
+                psRdv.setString(i++, rdv.getStatut().name());
+                psRdv.setString(i++, rdv.getNoteMedecin());
+
+                psRdv.executeUpdate();
+            }
+
+            c.commit();
+        } catch (SQLException e) {
+            if (c != null) { try { c.rollback(); } catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error lors de la création RDV.", rollbackEx); } }
+            throw new RuntimeException("Erreur lors de la création du RDV.", e);
+        } finally {
+            if (c != null) { try { c.setAutoCommit(true); c.close(); } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); } }
+        }
     }
 
-
-    // --- 1. Opérations CRUD de base ---
+    @Override
+    public Optional<RDV> findById(Long id) {
+        String sql = BASE_SELECT_RDV_SQL + " WHERE r.id_entite = ?";
+        return executeFindQuery(sql, id);
+    }
 
     @Override
     public List<RDV> findAll() {
-        String sql = "SELECT * FROM rdv ORDER BY date, heure";
-        List<RDV> out = new ArrayList<>();
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) out.add(mapRDV(rs));
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la récupération de tous les RDV", e); }
-        return out;
+        String sql = BASE_SELECT_RDV_SQL + " ORDER BY r.date, r.heure";
+        return executeFindAllQuery(sql);
     }
 
     @Override
-    public RDV findById(Long id) {
-        String sql = "SELECT * FROM rdv WHERE id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRDV(rs);
-                return null;
-            }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche du RDV par ID", e); }
-    }
+    public void update(RDV rdv) {
+        Connection c = null;
+        LocalDateTime now = LocalDateTime.now();
 
-    @Override
-    public void create(RDV newElement) {
-        if (newElement == null || newElement.getDossierMedicale() == null || newElement.getDossierMedicale().getId() == null) {
-            throw new IllegalArgumentException("Le RDV ou le Dossier Médical ne peut être nul.");
+        Long dossierId = (rdv.getDossierMedicale() != null) ? rdv.getDossierMedicale().getIdEntite() : null;
+        Long consultationId = (rdv.getConsultation() != null) ? rdv.getConsultation().getIdEntite() : null;
+
+        if (dossierId == null) {
+            throw new IllegalArgumentException("Erreur de mise à jour RDV: DossierMedicale doit être non nul.");
         }
 
-        // Clés étrangères : dossier_id et consultation_id (peut être null)
-        Long dossierId = newElement.getDossierMedicale().getId();
-        Long consultationId = newElement.getConsultation() != null ? newElement.getConsultation().getId() : null;
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
 
-        // Champs supposés : dossier_id, consultation_id, date, heure, motif, statut, noteMedecin
-        String sql = "INSERT INTO rdv (dossier_id, consultation_id, date, heure, motif, statut, noteMedecin) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            ps.setLong(1, dossierId);
-            if (consultationId != null) {
-                ps.setLong(2, consultationId);
-            } else {
-                ps.setNull(2, Types.BIGINT);
+            // 1. BaseEntity Update
+            try (PreparedStatement psBase = c.prepareStatement(SQL_UPDATE_BASE)) {
+                psBase.setTimestamp(1, Timestamp.valueOf(now));
+                psBase.setLong(2, rdv.getModifiePar());
+                psBase.setLong(3, rdv.getIdEntite());
+                psBase.executeUpdate();
+                rdv.setDateDerniereModification(now);
             }
-            ps.setDate(3, Date.valueOf(newElement.getDate()));
-            ps.setTime(4, Time.valueOf(newElement.getHeure()));
-            ps.setString(5, newElement.getMotif());
-            ps.setString(6, newElement.getStatut().name());
-            ps.setString(7, newElement.getNoteMedecin());
 
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        newElement.setId(generatedKeys.getLong(1));
-                    }
-                }
+            // 2. RDV Update
+            try (PreparedStatement psRdv = c.prepareStatement(SQL_UPDATE_RDV)) {
+                int i = 1;
+                // IDs de relation
+                psRdv.setLong(i++, dossierId);
+                psRdv.setObject(i++, consultationId); // Peut être NULL
+
+                // Champs RDV
+                psRdv.setDate(i++, Date.valueOf(rdv.getDate()));
+                psRdv.setTime(i++, Time.valueOf(rdv.getHeure()));
+                psRdv.setString(i++, rdv.getMotif());
+                psRdv.setString(i++, rdv.getStatut().name());
+                psRdv.setString(i++, rdv.getNoteMedecin());
+
+                // WHERE clause
+                psRdv.setLong(i++, rdv.getIdEntite());
+                psRdv.executeUpdate();
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la création du RDV", e); }
+
+            c.commit();
+        } catch (SQLException e) {
+            if (c != null) { try { c.rollback(); } catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error lors de la mise à jour RDV.", rollbackEx); } }
+            throw new RuntimeException("Erreur lors de la mise à jour du RDV.", e);
+        } finally {
+            if (c != null) { try { c.setAutoCommit(true); c.close(); } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); } }
+        }
     }
 
+    // ------------------------------------------------------------------------
+    // MÉTHODE MANQUANTE AJOUTÉE POUR SATISFAIRE CrudRepository
+    // ------------------------------------------------------------------------
     @Override
-    public void update(RDV newValuesElement) {
-        if (newValuesElement == null || newValuesElement.getId() == null) return;
-
-        Long dossierId = newValuesElement.getDossierMedicale() != null ? newValuesElement.getDossierMedicale().getId() : null;
-        Long consultationId = newValuesElement.getConsultation() != null ? newValuesElement.getConsultation().getId() : null;
-
-        String sql = "UPDATE rdv SET dossier_id = ?, consultation_id = ?, date = ?, heure = ?, motif = ?, statut = ?, noteMedecin = ? WHERE id = ?";
-
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-
-            if (dossierId != null) {
-                ps.setLong(1, dossierId);
-            } else {
-                ps.setNull(1, Types.BIGINT);
-            }
-            if (consultationId != null) {
-                ps.setLong(2, consultationId);
-            } else {
-                ps.setNull(2, Types.BIGINT);
-            }
-            ps.setDate(3, Date.valueOf(newValuesElement.getDate()));
-            ps.setTime(4, Time.valueOf(newValuesElement.getHeure()));
-            ps.setString(5, newValuesElement.getMotif());
-            ps.setString(6, newValuesElement.getStatut().name());
-            ps.setString(7, newValuesElement.getNoteMedecin());
-            ps.setLong(8, newValuesElement.getId());
-
-            ps.executeUpdate();
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la mise à jour du RDV", e); }
-    }
-
-    @Override
-    public void delete(RDV element) {
-        if (element != null && element.getId() != null) deleteById(element.getId());
+    public void delete(RDV rdv) {
+        if (rdv.getIdEntite() == null) {
+            throw new IllegalArgumentException("L'ID de l'entité RDV ne peut pas être null pour la suppression.");
+        }
+        deleteById(rdv.getIdEntite());
     }
 
     @Override
     public void deleteById(Long id) {
-        String sql = "DELETE FROM rdv WHERE id = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+             PreparedStatement ps = c.prepareStatement(SQL_DELETE_BASE)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la suppression du RDV par ID", e); }
-    }
-
-    // --- 2. Méthodes de Recherche Spécifiques ---
-
-    @Override
-    public List<RDV> findByDossierMedicaleId(Long dossierMedicaleId) {
-        String sql = "SELECT * FROM rdv WHERE dossier_id = ? ORDER BY date DESC, heure DESC";
-        List<RDV> out = new ArrayList<>();
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, dossierMedicaleId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapRDV(rs));
-            }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche des RDV par Dossier Médical", e); }
-        return out;
-    }
-
-    @Override
-    public Optional<RDV> findByConsultationId(Long consultationId) {
-        String sql = "SELECT * FROM rdv WHERE consultation_id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-
-            ps.setLong(1, consultationId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return Optional.of(mapRDV(rs));
-                // Si rs.next() est faux, on atteint ici et on retourne un Optional vide
-                return Optional.empty();
-            }
         } catch (SQLException e) {
-            // En cas d'erreur SQL, on lance une exception Runtime.
-            throw new RuntimeException("Erreur lors de la recherche du RDV par Consultation ID", e);
+            throw new RuntimeException("Erreur lors de la suppression du RDV.", e);
+        }
+    }
+
+    // =========================================================================
+    //                            Implémentations Spécifiques
+    // =========================================================================
+
+    @Override
+    public RDV updateStatut(Long rdvId, StatutRDV nouveauStatut) {
+        final String SQL_UPDATE_STATUT = "UPDATE RDV SET statut = ? WHERE id_entite = ?";
+
+        Connection c = null;
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // 1. Update BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(SQL_UPDATE_BASE)) {
+                psBase.setTimestamp(1, Timestamp.valueOf(now));
+                psBase.setLong(2, 1L);
+                psBase.setLong(3, rdvId);
+                psBase.executeUpdate();
+            }
+
+            // 2. Update RDV
+            try (PreparedStatement psRdv = c.prepareStatement(SQL_UPDATE_STATUT)) {
+                psRdv.setString(1, nouveauStatut.name());
+                psRdv.setLong(2, rdvId);
+                psRdv.executeUpdate();
+            }
+
+            c.commit();
+            return findById(rdvId).orElse(null);
+
+        } catch (SQLException e) {
+            if (c != null) { try { c.rollback(); } catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error lors de la mise à jour du statut.", rollbackEx); } }
+            throw new RuntimeException("Erreur lors de la mise à jour du statut du RDV.", e);
+        } finally {
+            if (c != null) { try { c.setAutoCommit(true); c.close(); } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); } }
         }
     }
 
     @Override
+    public List<RDV> findByDossierMedicaleId(Long dossierMedicaleId) {
+        String sql = BASE_SELECT_RDV_SQL + " WHERE r.dossier_medicale_id = ? ORDER BY r.date DESC";
+        return executeFindAllQuery(sql, dossierMedicaleId);
+    }
+
+    @Override
+    public Optional<RDV> findByConsultationId(Long consultationId) {
+        String sql = BASE_SELECT_RDV_SQL + " WHERE r.consultation_id = ?";
+        return executeFindQuery(sql, consultationId);
+    }
+
+    @Override
     public List<RDV> findByDate(LocalDate date) {
-        String sql = "SELECT * FROM rdv WHERE date = ? ORDER BY heure ASC";
-        List<RDV> out = new ArrayList<>();
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setDate(1, Date.valueOf(date));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapRDV(rs));
-            }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche des RDV par date", e); }
-        return out;
+        String sql = BASE_SELECT_RDV_SQL + " WHERE r.date = ? ORDER BY r.heure";
+        return executeFindAllQuery(sql, Date.valueOf(date));
     }
 
     @Override
     public boolean existsByDateAndHeureAndMedecinId(LocalDate date, LocalTime heure, Long medecinId) {
-        // Logique de jointure pour lier RDV -> DossierMedicale -> Medecin
-        // On suppose que la table DossierMedicale a une colonne 'medecin_id'
-        String sql = """
-            SELECT 1 FROM rdv r 
-            JOIN DossierMedicale dm ON r.dossier_id = dm.id 
-            WHERE r.date = ? AND r.heure = ? AND dm.medecin_id = ? AND r.statut IN ('PLANIFIE', 'CONFIRME')
-            LIMIT 1
-            """;
+        final String SQL = """
+            SELECT 1
+            FROM RDV r
+            JOIN DossierMedicale dm ON r.dossier_medicale_id = dm.id_entite
+            WHERE r.date = ? AND r.heure = ? AND dm.medecin_id = ? LIMIT 1
+        """;
         try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-
+             PreparedStatement ps = c.prepareStatement(SQL)) {
             ps.setDate(1, Date.valueOf(date));
             ps.setTime(2, Time.valueOf(heure));
             ps.setLong(3, medecinId);
-
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la vérification de l'existence du RDV pour le médecin", e); }
-    }
-
-    // --- 3. Méthodes d'Action et de Mise à Jour ---
-
-    @Override
-    public RDV updateStatut(Long rdvId, StatutRDV nouveauStatut) {
-        String sql = "UPDATE rdv SET statut = ? WHERE id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, nouveauStatut.name());
-            ps.setLong(2, rdvId);
-            ps.executeUpdate();
-
-            return findById(rdvId);
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la mise à jour du statut du RDV", e); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la vérification de disponibilité du créneau.", e);
+        }
     }
 
     @Override
     public List<RDV> findByStatut(StatutRDV statut) {
-        String sql = "SELECT * FROM rdv WHERE statut = ? ORDER BY date ASC, heure ASC";
+        String sql = BASE_SELECT_RDV_SQL + " WHERE r.statut = ? ORDER BY r.date, r.heure";
+        return executeFindAllQuery(sql, statut.name());
+    }
+
+    // =========================================================================
+    //                            Méthodes Utilitaires
+    // =========================================================================
+
+    private Optional<RDV> executeFindQuery(String sql, Object... params) {
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? Optional.of(RowMappers.mapRDV(rs)) : Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur d'exécution de la requête de recherche RDV.", e);
+        }
+    }
+
+    private List<RDV> executeFindAllQuery(String sql, Object... params) {
         List<RDV> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, statut.name());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapRDV(rs));
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche des RDV par statut", e); }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(RowMappers.mapRDV(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur d'exécution de la requête findAll RDV.", e);
+        }
         return out;
     }
 }

@@ -40,7 +40,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Auteur du projet (metadonnee optionnelle) -->
-        <Author>Pr. O. El Midaoui</Author>
+        <Author>Zineb Boulahbach - Abddelkhalek Ait-Idir</Author>
         <!-- Version du MySQL driver placee ici pour lisibilite -->
         <mysql.version>8.0.33</mysql.version>
         <!-- Versions des plugins epinglees (bonne pratique) -->
@@ -98,13 +98,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- === BCrypt (cryptage des mot de passe utilisateur) === -->
         <dependency>
             <groupId>org.mindrot</groupId>
@@ -128,6 +121,14 @@
             <version>3.26.3</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring Data JPA (Jakarta API incluse) -->
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
 
     </dependencies>
 

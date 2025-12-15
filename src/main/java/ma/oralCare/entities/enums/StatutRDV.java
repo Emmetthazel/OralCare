@@ -1,8 +1,8 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le statut d un rendez-vous
- */
+import lombok.Getter;
+
+@Getter
 public enum StatutRDV {
     CONFIRMED("Confirmé"),
     PENDING("En attente"),
@@ -14,9 +14,6 @@ public enum StatutRDV {
     StatutRDV(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

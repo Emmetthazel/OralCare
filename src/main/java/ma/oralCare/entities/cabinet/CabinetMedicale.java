@@ -1,25 +1,24 @@
 package ma.oralCare.entities.cabinet;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import ma.oralCare.entities.common.Adresse;
-import ma.oralCare.entities.common.BaseEntity;
-import ma.oralCare.entities.staff.Staff;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import ma.oralCare.entities.base.Adresse;
+import ma.oralCare.entities.base.BaseEntity;
+import ma.oralCare.entities.users.Staff;
 
 import java.util.List;
 
 /**
  * Entite representant un cabinet medical dans le systeme OralCare
  */
-@Data
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CabinetMedicale extends BaseEntity {
+@EqualsAndHashCode(callSuper = true)
 
-    private Long id;
+public class CabinetMedicale extends BaseEntity {
 
     private String nom;
 
@@ -43,38 +42,13 @@ public class CabinetMedicale extends BaseEntity {
 
     private String description;
 
-    /**
-     * Liste des charges du cabinet medical
-     */
     private List<Charges> charges;
 
-    /**
-     * Liste des revenus du cabinet medical
-     */
     private List<Revenues> revenues;
 
-    /**
-     * Liste des statistiques du cabinet medical
-     */
     private List<Statistiques> statistiques;
 
-    /**
-     * Liste du personnel du cabinet medical
-     */
     private List<Staff> staff;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CabinetMedicale)) return false;
-        CabinetMedicale that = (CabinetMedicale) o;
-        return id != null && id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
 
     @Override
     public String toString() {
@@ -83,20 +57,36 @@ public class CabinetMedicale extends BaseEntity {
           id = %d,
           nom = '%s',
           email = '%s',
+          logo = '%s',
+          adresse = '%s',
+          cin = '%s',
           tel1 = '%s',
           tel2 = '%s',
+          siteWeb = '%s',
+          instagram = '%s',
+          facebook = '%s',
+          description = '%s',
           chargesCount = %d,
           revenuesCount = %d,
+          statistiquesCount = %d,
           staffCount = %d
         }
         """.formatted(
-                id,
+                getIdEntite(),
                 nom,
                 email,
+                logo,
+                adresse,
+                cin,
                 tel1,
                 tel2,
+                siteWeb,
+                instagram,
+                facebook,
+                description,
                 charges == null ? 0 : charges.size(),
                 revenues == null ? 0 : revenues.size(),
+                statistiques == null ? 0 : statistiques.size(),
                 staff == null ? 0 : staff.size()
         );
     }

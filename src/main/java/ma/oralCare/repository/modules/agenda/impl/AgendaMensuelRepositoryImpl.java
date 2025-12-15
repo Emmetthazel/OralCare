@@ -1,204 +1,363 @@
 package ma.oralCare.repository.modules.agenda.impl;
 
+import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.entities.agenda.AgendaMensuel;
 import ma.oralCare.entities.enums.Jour;
 import ma.oralCare.entities.enums.Mois;
-import ma.oralCare.repository.modules.agenda.api.AgendaMensuelRepository;
-import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.repository.common.RowMappers;
+import ma.oralCare.repository.modules.agenda.api.AgendaMensuelRepository;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-// NOTE: RowMappers.mapAgendaMensuel(rs) et RowMappers.mapMedecin(rs) sont supposés exister.
 public class AgendaMensuelRepositoryImpl implements AgendaMensuelRepository {
 
-    // --- Fonctions utilitaires de conversion ---
+    // Requête de base pour lire AgendaMensuel + BaseEntity
+    private static final String BASE_SELECT_SQL = """
+        SELECT am.mois, am.annee, am.medecin_id,
+            b.id_entite, b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+        FROM AgendaMensuel am JOIN BaseEntity b ON am.id_entite = b.id_entite
+        """;
 
-    /** Convertit List<Jour> en String CSV pour la BDD */
-    private String joursListToCsv(List<Jour> jours) {
-        if (jours == null || jours.isEmpty()) return "";
-        return jours.stream().map(Jour::name).collect(Collectors.joining(","));
-    }
+    // SQL pour insérer un jour non disponible (utilisé dans batch)
+    private static final String SQL_INSERT_JOUR =
+            "INSERT INTO AgendaMensuel_JourNonDisponible(agenda_id, jour_non_disponible) VALUES (?,?)";
 
-    /** Convertit String CSV de la BDD en List<Jour> */
-    private List<Jour> csvToJoursList(String csv) {
-        if (csv == null || csv.trim().isEmpty()) return new ArrayList<>();
-        return Arrays.stream(csv.split(","))
-                .map(s -> {
-                    try {
-                        return Jour.valueOf(s.trim());
-                    } catch (IllegalArgumentException e) {
-                        return null; // Gérer les valeurs invalides
-                    }
-                })
-                .filter(j -> j != null)
-                .collect(Collectors.toList());
-    }
-
-    // --- Mappeur d'AgendaMensuel (Exemple de base) ---
-    // Note: Dans une implémentation réelle, cette logique serait dans RowMappers.
-    private AgendaMensuel mapAgendaMensuel(ResultSet rs) throws SQLException {
-        // Le mappage complet d'AgendaMensuel nécessite le médecin et les JoursNonDisponible
-        String joursCsv = rs.getString("joursNonDisponible");
-
-        // ATTENTION: Le mappage du Medecin doit être fait par un MedecinRepository ou être très basique ici.
-        // Par souci de simplicité dans ce Repository (et non un Service), nous ne mappons pas l'objet Medecin complet.
-
-        return AgendaMensuel.builder()
-                .id(rs.getLong("id"))
-                .mois(Mois.valueOf(rs.getString("mois")))
-                .joursNonDisponible(csvToJoursList(joursCsv))
-                // Le médecin est omis ou mappé partiellement, car c'est une relation complexe
-                // .medecin(RowMappers.mapMedecin(rs)) // Ceci nécessiterait une jointure ou une autre requête.
-                .build();
-    }
-
-
-    // --- 1. Opérations CRUD de base ---
+    // =========================================================================
+    //                            CRUD BASIQUE (Hérité de CrudRepository)
+    // =========================================================================
 
     @Override
     public List<AgendaMensuel> findAll() {
-        String sql = "SELECT * FROM agendaregister"; // Nom de table supposé: agendaregister
+        String sql = BASE_SELECT_SQL + " ORDER BY am.annee DESC, am.mois DESC, am.medecin_id";
         List<AgendaMensuel> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) out.add(mapAgendaMensuel(rs)); // Utilisation du mapper local
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la récupération de tous les agendas", e); }
+            while (rs.next()) {
+                AgendaMensuel agenda = RowMappers.mapAgendaMensuel(rs);
+                // Chargement des jours non disponibles
+                agenda.setJoursNonDisponible(findJoursNonDisponiblesByAgendaId(agenda.getIdEntite()));
+                out.add(agenda);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de findAll AgendaMensuel.", e);
+        }
         return out;
     }
 
     @Override
-    public AgendaMensuel findById(Long id) {
-        String sql = "SELECT * FROM agendaregister WHERE id = ?";
+    public Optional<AgendaMensuel> findById(Long id) {
+        String sql = BASE_SELECT_SQL + " WHERE am.id_entite = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapAgendaMensuel(rs);
-                return null;
+                if (rs.next()) {
+                    AgendaMensuel agenda = RowMappers.mapAgendaMensuel(rs);
+                    agenda.setJoursNonDisponible(findJoursNonDisponiblesByAgendaId(agenda.getIdEntite()));
+                    return Optional.of(agenda);
+                }
+                return Optional.empty();
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche de l'agenda par ID", e); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de findById AgendaMensuel.", e);
+        }
     }
 
     @Override
-    public void create(AgendaMensuel newElement) {
-        if (newElement == null || newElement.getMedecin() == null || newElement.getMedecin().getId() == null) {
-            throw new IllegalArgumentException("L'agenda, le médecin ou l'ID du médecin ne peut être nul.");
-        }
+    public void create(AgendaMensuel am) {
+        Long baseId = null;
+        Connection c = null; // Maintenu pour le rollback dans le catch
 
-        String sql = "INSERT INTO agendaregister (medecin_id, mois, joursNonDisponible) VALUES (?, ?, ?)";
-        String joursCsv = joursListToCsv(newElement.getJoursNonDisponible());
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now);
 
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        String sqlBase = "INSERT INTO BaseEntity(date_creation, date_derniere_modification, cree_par) VALUES(?, ?, ?)";
+        String sqlAgenda = "INSERT INTO AgendaMensuel(id_entite, mois, annee, medecin_id) VALUES(?, ?, ?, ?)";
 
-            ps.setLong(1, newElement.getMedecin().getId()); // Clé étrangère
-            ps.setString(2, newElement.getMois().name());
-            ps.setString(3, joursCsv);
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false); // Début de transaction
 
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        newElement.setId(generatedKeys.getLong(1));
+            // 1. Insertion dans BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase, Statement.RETURN_GENERATED_KEYS)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                psBase.setNull(2, Types.TIMESTAMP);
+                if (am.getCreePar() != null) psBase.setLong(3, am.getCreePar());
+                else psBase.setNull(3, Types.BIGINT);
+                psBase.executeUpdate();
+                try (ResultSet keys = psBase.getGeneratedKeys()) {
+                    if (keys.next()) baseId = keys.getLong(1);
+                    else throw new SQLException("Échec de la récupération de l'ID BaseEntity.");
+                }
+                am.setIdEntite(baseId);
+                am.setDateCreation(now);
+            }
+
+            // 2. Insertion dans AgendaMensuel
+            try (PreparedStatement psAgenda = c.prepareStatement(sqlAgenda)) {
+                psAgenda.setLong(1, am.getIdEntite());
+                psAgenda.setString(2, am.getMois().name());
+                psAgenda.setInt(3, am.getAnnee());
+                psAgenda.setLong(4, am.getMedecin().getIdEntite());
+                psAgenda.executeUpdate();
+            }
+
+            // 3. Insertion des Jours Non Disponibles (BATCH insertion)
+            if (am.getJoursNonDisponible() != null && !am.getJoursNonDisponible().isEmpty()) {
+                try (PreparedStatement psJour = c.prepareStatement(SQL_INSERT_JOUR)) {
+                    for (Jour jour : am.getJoursNonDisponible()) {
+                        psJour.setLong(1, am.getIdEntite());
+                        psJour.setString(2, jour.name());
+                        psJour.addBatch();
                     }
+                    psJour.executeBatch();
                 }
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la création de l'agenda mensuel", e); }
+
+            c.commit();
+
+        } catch (SQLException e) {
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la création de l'Agenda Mensuel.", e);
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
+        }
     }
 
     @Override
-    public void update(AgendaMensuel newValuesElement) {
-        if (newValuesElement == null || newValuesElement.getId() == null) return;
+    public void update(AgendaMensuel am) {
+        Connection c = null;
 
-        String sql = "UPDATE agendaregister SET mois = ?, joursNonDisponible = ? WHERE id = ?";
-        String joursCsv = joursListToCsv(newValuesElement.getJoursNonDisponible());
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now);
 
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        String sqlBase = "UPDATE BaseEntity SET date_derniere_modification=?, modifie_par=? WHERE id_entite=?";
+        String sqlAgenda = "UPDATE AgendaMensuel SET mois=?, annee=?, medecin_id=? WHERE id_entite=?";
 
-            ps.setString(1, newValuesElement.getMois().name());
-            ps.setString(2, joursCsv);
-            ps.setLong(3, newValuesElement.getId());
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
 
-            ps.executeUpdate();
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la mise à jour de l'agenda mensuel", e); }
+            // 1. Mise à jour de BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                if (am.getModifiePar() != null) psBase.setLong(2, am.getModifiePar());
+                else psBase.setNull(2, Types.BIGINT);
+                psBase.setLong(3, am.getIdEntite());
+                psBase.executeUpdate();
+                am.setDateDerniereModification(now);
+            }
+
+            // 2. Mise à jour de AgendaMensuel
+            try (PreparedStatement psAgenda = c.prepareStatement(sqlAgenda)) {
+                psAgenda.setString(1, am.getMois().name());
+                psAgenda.setInt(2, am.getAnnee());
+                psAgenda.setLong(3, am.getMedecin().getIdEntite());
+                psAgenda.setLong(4, am.getIdEntite());
+                psAgenda.executeUpdate();
+            }
+
+            // 3. Mise à jour des Jours Non Disponibles (CORRIGÉE)
+            if (am.getJoursNonDisponible() != null) {
+                // *** CORRECTION : Appel de la méthode interne setJoursNonDisponibleInternal ***
+                setJoursNonDisponibleInternal(am.getIdEntite(), am.getJoursNonDisponible(), c);
+            }
+
+            c.commit(); // Commit unique
+
+        } catch (SQLException e) {
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error on update.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la mise à jour de l'Agenda Mensuel.", e);
+        } finally {
+            if (c != null) {
+                try {
+                    // Rétablir l'AutoCommit avant de fermer
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
+        }
     }
 
     @Override
-    public void delete(AgendaMensuel element) {
-        if (element != null && element.getId() != null) deleteById(element.getId());
-    }
+    public void delete(AgendaMensuel am) { if (am != null) deleteById(am.getIdEntite()); }
 
     @Override
     public void deleteById(Long id) {
-        String sql = "DELETE FROM agendaregister WHERE id = ?";
+        // La suppression dans BaseEntity déclenche ON DELETE CASCADE dans AgendaMensuel et AgendaMensuel_JourNonDisponible
+        String sql = "DELETE FROM BaseEntity WHERE id_entite = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la suppression de l'agenda mensuel par ID", e); }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la suppression de l'Agenda Mensuel par ID.", e); }
     }
 
-    // --- 2. Méthodes de Recherche Spécifiques ---
+    // =========================================================================
+    //                            MÉTHODES SPÉCIFIQUES À L'AGENDA
+    // =========================================================================
 
     @Override
-    public Optional<AgendaMensuel> findByMedecinId(Long medecinId) {
-        String sql = "SELECT * FROM agendaregister WHERE medecin_id = ? ORDER BY mois DESC LIMIT 1";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, medecinId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return Optional.of(mapAgendaMensuel(rs));
-                return Optional.empty();
-            }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche de l'agenda par ID Médecin", e); }
-    }
-
-    @Override
-    public Optional<AgendaMensuel> findByMedecinIdAndMois(Long medecinId, Mois mois) {
-        String sql = "SELECT * FROM agendaregister WHERE medecin_id = ? AND mois = ?";
+    public Optional<AgendaMensuel> findByMedecinIdAndMoisAndAnnee(Long medecinId, Mois mois, int annee) {
+        String sql = BASE_SELECT_SQL + " WHERE am.medecin_id = ? AND am.mois = ? AND am.annee = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, medecinId);
             ps.setString(2, mois.name());
+            ps.setInt(3, annee);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return Optional.of(mapAgendaMensuel(rs));
+                if (rs.next()) {
+                    AgendaMensuel agenda = RowMappers.mapAgendaMensuel(rs);
+                    agenda.setJoursNonDisponible(findJoursNonDisponiblesByAgendaId(agenda.getIdEntite()));
+                    return Optional.of(agenda);
+                }
                 return Optional.empty();
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la recherche de l'agenda par Médecin et Mois", e); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de findByMedecinIdAndMoisAndAnnee.", e);
+        }
     }
 
-    // --- 3. Méthodes de Gestion Spécifiques ---
+    @Override
+    public Optional<AgendaMensuel> findCurrentAgenda(Long medecinId, LocalDate date) {
+        Mois mois = Mois.valueOf(date.getMonth().name());
+        int annee = date.getYear();
+        return findByMedecinIdAndMoisAndAnnee(medecinId, mois, annee);
+    }
 
     @Override
-    public AgendaMensuel updateJoursNonDisponible(Long agendaId, List<Jour> joursNonDisponible) {
-        String joursCsv = joursListToCsv(joursNonDisponible);
-        String sql = "UPDATE agendaregister SET joursNonDisponible = ? WHERE id = ?";
-
+    public List<AgendaMensuel> findAllByMedecinId(Long medecinId) {
+        String sql = BASE_SELECT_SQL + " WHERE am.medecin_id = ? ORDER BY am.annee DESC, am.mois DESC";
+        List<AgendaMensuel> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, joursCsv);
-            ps.setLong(2, agendaId);
-            ps.executeUpdate();
+            ps.setLong(1, medecinId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    AgendaMensuel agenda = RowMappers.mapAgendaMensuel(rs);
+                    agenda.setJoursNonDisponible(findJoursNonDisponiblesByAgendaId(agenda.getIdEntite()));
+                    out.add(agenda);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de findAllByMedecinId.", e);
+        }
+        return out;
+    }
 
-            // Récupérer l'entité mise à jour pour la retourner
-            return findById(agendaId);
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la mise à jour des jours non disponibles", e); }
+    // =========================================================================
+    //                    GESTION JOURS NON DISPONIBLES (MANY-TO-MANY)
+    // =========================================================================
+
+    @Override
+    public void addJourNonDisponible(Long agendaId, Jour jour) {
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(SQL_INSERT_JOUR)) {
+            ps.setLong(1, agendaId);
+            ps.setString(2, jour.name());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de l'ajout du JourNonDisponible.", e);
+        }
     }
 
     @Override
-    public List<Jour> findJoursNonDisponibleByMedecinIdAndMois(Long medecinId, Mois mois) {
-        // Simplement, récupère l'agenda et extrait la liste
-        Optional<AgendaMensuel> agendaOpt = findByMedecinIdAndMois(medecinId, mois);
+    public void removeJourNonDisponible(Long agendaId, Jour jour) {
+        String sql = "DELETE FROM AgendaMensuel_JourNonDisponible WHERE agenda_id=? AND jour_non_disponible=?";
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, agendaId);
+            ps.setString(2, jour.name());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la suppression du JourNonDisponible.", e);
+        }
+    }
 
-        return agendaOpt.map(AgendaMensuel::getJoursNonDisponible)
-                .orElseGet(ArrayList::new);
+    @Override
+    public List<Jour> findJoursNonDisponiblesByAgendaId(Long agendaId) {
+        String sql = "SELECT jour_non_disponible FROM AgendaMensuel_JourNonDisponible WHERE agenda_id = ?";
+        List<Jour> jours = new ArrayList<>();
+        try (Connection c = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, agendaId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    jours.add(Jour.valueOf(rs.getString("jour_non_disponible")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la récupération des jours non disponibles.", e);
+        }
+        return jours;
+    }
+
+    // --- Version Publique (Conforme à l'interface, gère sa propre transaction) ---
+    @Override
+    public void setJoursNonDisponible(Long agendaId, List<Jour> joursNonDisponible) {
+        Connection c = null;
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // Appel à la version interne pour la logique
+            setJoursNonDisponibleInternal(agendaId, joursNonDisponible, c);
+
+            c.commit();
+        } catch (SQLException e) {
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error on setJours.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la mise à jour des jours non disponibles.", e);
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
+        }
+    }
+
+    // --- Version Interne (Utilisée par update(am) et la version publique, fait le travail) ---
+    public void setJoursNonDisponibleInternal(Long agendaId, List<Jour> joursNonDisponible, Connection c) throws SQLException {
+        String sqlDelete = "DELETE FROM AgendaMensuel_JourNonDisponible WHERE agenda_id=?";
+
+        // 1. Supprimer tous les jours existants
+        try (PreparedStatement psDelete = c.prepareStatement(sqlDelete)) {
+            psDelete.setLong(1, agendaId);
+            psDelete.executeUpdate();
+        }
+
+        // 2. Insérer la nouvelle liste (BATCH insertion)
+        if (joursNonDisponible != null && !joursNonDisponible.isEmpty()) {
+            try (PreparedStatement psJour = c.prepareStatement(SQL_INSERT_JOUR)) {
+                for (Jour jour : joursNonDisponible) {
+                    psJour.setLong(1, agendaId);
+                    psJour.setString(2, jour.name());
+                    psJour.addBatch();
+                }
+                psJour.executeBatch();
+            }
+        }
+        // PAS de commit/close ici.
     }
 }

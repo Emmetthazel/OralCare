@@ -1,48 +1,31 @@
 package ma.oralCare.entities.agenda;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import ma.oralCare.entities.common.BaseEntity;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import ma.oralCare.entities.base.BaseEntity;
 import ma.oralCare.entities.enums.Jour;
 import ma.oralCare.entities.enums.Mois;
-import ma.oralCare.entities.staff.Medecin;
+import ma.oralCare.entities.users.Medecin;
 
 import java.util.List;
 
-/**
- * Entite representant l agenda mensuel d un medecin dans le systeme OralCare
- */
-@Data
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AgendaMensuel extends BaseEntity {
+@EqualsAndHashCode(callSuper = true)
 
-    private Long id;
+public class AgendaMensuel extends BaseEntity {
 
     private Mois mois;
 
+    private int annee;
+
     private List<Jour> joursNonDisponible;
 
-    /**
-     * Medecin associe a cet agenda
-     */
     private Medecin medecin;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AgendaMensuel)) return false;
-        AgendaMensuel that = (AgendaMensuel) o;
-        return id != null && id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
 
     @Override
     public String toString() {
@@ -50,14 +33,16 @@ public class AgendaMensuel extends BaseEntity {
         AgendaMensuel {
           id = %d,
           mois = %s,
+          annee = %d,
           joursNonDisponibleCount = %d,
           medecin = %s
         }
         """.formatted(
-                id,
+                getIdEntite(),
                 mois,
+                annee,
                 joursNonDisponible == null ? 0 : joursNonDisponible.size(),
-                medecin != null ? medecin.getNom() : null
+                medecin != null ? medecin.getNom() : "null"
         );
     }
 }

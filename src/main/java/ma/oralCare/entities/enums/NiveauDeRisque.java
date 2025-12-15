@@ -1,8 +1,12 @@
 package ma.oralCare.entities.enums;
 
+import lombok.Getter;
+
 /**
  * Enumeration representant le niveau de risque d un antecedent medical
  */
+@Getter
+
 public enum NiveauDeRisque {
     LOW("Faible"),
     MEDIUM("Moyen"),
@@ -14,8 +18,5 @@ public enum NiveauDeRisque {
         this.libelle = libelle;
     }
 
-    public String getLibelle() {
-        return libelle;
-    }
 }
 

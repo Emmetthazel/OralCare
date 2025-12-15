@@ -1,7 +1,7 @@
 package ma.oralCare.repository.modules.agenda.api;
 
 import ma.oralCare.entities.enums.StatutRDV;
-import ma.oralCare.entities.rdv.RDV;
+import ma.oralCare.entities.agenda.RDV;
 import ma.oralCare.repository.common.CrudRepository;
 
 import java.time.LocalDate;
@@ -16,4 +16,5 @@ public interface RDVRepository extends CrudRepository<RDV, Long> {
     boolean existsByDateAndHeureAndMedecinId(LocalDate date, LocalTime heure, Long medecinId);
     RDV updateStatut(Long rdvId, StatutRDV nouveauStatut);
     List<RDV> findByStatut(StatutRDV statut);
+
 }

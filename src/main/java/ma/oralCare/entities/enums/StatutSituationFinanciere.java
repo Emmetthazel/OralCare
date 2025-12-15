@@ -1,21 +1,19 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le statut d une situation financiere
- */
+import lombok.Getter;
+
+@Getter
+
 public enum StatutSituationFinanciere {
     ACTIVE("Active"),
-    CLOSED("Fermée"),
-    ARCHIVED("Archivée");
-    
+    ARCHIVED("Archivée"),
+    CLOSED("Fermée");
+
     private final String libelle;
-    
+
     StatutSituationFinanciere(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

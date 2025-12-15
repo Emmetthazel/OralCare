@@ -1,500 +1,512 @@
-﻿-- =====================================================
--- Schema de base de donnees pour le systeme OralCare
--- =====================================================
-
--- Creation de la base de donnees
-CREATE DATABASE IF NOT EXISTS oralcare_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS oralcare_db;
 USE oralcare_db;
 
--- =====================================================
--- Tables de base (heritage de BaseEntity)
--- =====================================================
+CREATE TABLE BaseEntity (
+    id_entite BIGINT AUTO_INCREMENT PRIMARY KEY,
+    date_creation DATETIME,
+    date_derniere_modification DATETIME,
+    cree_par BIGINT,
+    modifie_par BIGINT
+);
 
--- Table des utilisateurs
-CREATE TABLE utilisateurs (
-    id_user BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE Antecedent (
+    id_entite BIGINT PRIMARY KEY,  -- correspond à BaseEntity.id_entite
+
     nom VARCHAR(255) NOT NULL,
+
+    categorie VARCHAR(50),  -- si tu as un enum CategorieAntecedent, sinon VARCHAR
+    niveau_de_risque VARCHAR(10) NOT NULL CHECK (
+        niveau_de_risque IN ('LOW', 'MEDIUM', 'HIGH')
+    ),
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE cabinet_medicale (
+    id_entite BIGINT PRIMARY KEY,
+
+    nom VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    numero VARCHAR(10),
+    logo VARCHAR(500),
+
+    -- Adresse (embedded)
+    numero VARCHAR(50),
+    rue VARCHAR(255) NOT NULL,
+    code_postal VARCHAR(20) NOT NULL,
+    ville VARCHAR(100) NOT NULL,
+    pays VARCHAR(100) NOT NULL,
+    complement VARCHAR(255),
+
+    cin VARCHAR(20) UNIQUE,
+    tel1 VARCHAR(20) UNIQUE,
+    tel2 VARCHAR(20),
+    siteWeb VARCHAR(255) UNIQUE,
+    instagram VARCHAR(255),
+    facebook VARCHAR(255),
+    description TEXT,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Patient (
+    id_entite BIGINT PRIMARY KEY,   -- correspond à BaseEntity.id_entite
+
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255) NOT NULL,
+    date_de_naissance DATE,
+    email VARCHAR(120),
+    sexe VARCHAR(10) NOT NULL,
+    adresse VARCHAR(255),
+    telephone VARCHAR(20),
+
+    assurance VARCHAR(10) NOT NULL,
+
+    CONSTRAINT chk_patient_sexe CHECK (sexe IN ('MALE', 'FEMALE', 'OTHER')),
+    CONSTRAINT chk_patient_assurance CHECK (assurance IN ('CNOPS', 'CNSS', 'RAMED', 'NONE')),
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE
+);
+
+
+
+
+
+CREATE TABLE Medicament (
+    id_entite BIGINT PRIMARY KEY,  -- correspond à BaseEntity.id_entite
+
+    nom VARCHAR(255) NOT NULL,
+    laboratoire VARCHAR(255),
+    type VARCHAR(255),
+    forme VARCHAR(20) NOT NULL CHECK (
+        forme IN ('TABLET', 'CAPSULE', 'SYRUP', 'INJECTION', 'CREAM', 'OINTMENT', 'DROPS')
+    ),
+    remboursable BOOLEAN DEFAULT FALSE,
+    prix_unitaire DECIMAL(10,2),
+    description TEXT,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE acte (
+    id_entite BIGINT PRIMARY KEY,
+    libelle VARCHAR(255) NOT NULL,
+    categorie VARCHAR(255),
+    prix_de_base DECIMAL(10,2),
+    CONSTRAINT fk_acte_base FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite) ON DELETE CASCADE
+);
+
+CREATE TABLE role (
+    id_entite BIGINT PRIMARY KEY,
+    libelle VARCHAR(50) NOT NULL,
+    CONSTRAINT fk_role_base FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    CONSTRAINT chk_role_libelle CHECK (libelle IN ('ADMIN', 'DOCTOR', 'SECRETARY', 'RECEPTIONIST'))
+);
+
+CREATE TABLE utilisateur (
+    id_entite BIGINT PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    cin VARCHAR(50) UNIQUE,
+    tel VARCHAR(50) UNIQUE,
+    sexe VARCHAR(50),
+    login VARCHAR(255) UNIQUE NOT NULL,
+    mot_de_pass VARCHAR(255),
+    date_naissance DATE,
+    last_login_date DATE,
+    numero VARCHAR(50),
     rue VARCHAR(255),
-    code_postal VARCHAR(10),
+    code_postal VARCHAR(20),
     ville VARCHAR(100),
     pays VARCHAR(100),
     complement VARCHAR(255),
-    cin VARCHAR(20) UNIQUE,
-    tel VARCHAR(20),
-    sexe ENUM('MALE', 'FEMALE', 'OTHER') NOT NULL,
-    login VARCHAR(100) UNIQUE NOT NULL,
-    mot_de_pass VARCHAR(255) NOT NULL,
-    last_login_date DATE,
-    date_naissance DATE,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
+    CONSTRAINT fk_utilisateur_base FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE
 );
 
--- Table des roles
-CREATE TABLE roles (
-    id_role BIGINT PRIMARY KEY AUTO_INCREMENT,
-    libelle ENUM('ADMIN', 'DOCTOR', 'SECRETARY', 'RECEPTIONIST') NOT NULL,
-    privileges JSON,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
-);
-
--- Table de liaison utilisateurs-roles (relation many-to-many)
-CREATE TABLE utilisateur_roles (
-    id_user BIGINT,
-    id_role BIGINT,
-    PRIMARY KEY (id_user, id_role),
-    FOREIGN KEY (id_user) REFERENCES utilisateurs(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (id_role) REFERENCES roles(id_role) ON DELETE CASCADE
-);
-
--- Table des notifications
-CREATE TABLE notifications (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    titre ENUM('APPOINTMENT_REMINDER', 'PAYMENT_DUE', 'NEW_MESSAGE', 'SYSTEM_UPDATE', 'EMERGENCY') NOT NULL,
-    message TEXT NOT NULL,
-    date DATE NOT NULL,
-    time TIME NOT NULL,
-    type ENUM('ALERT', 'INFO', 'WARNING', 'SUCCESS') NOT NULL,
-    priorite ENUM('HIGH', 'MEDIUM', 'LOW') NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
-);
-
--- Table de liaison utilisateurs-notifications (relation many-to-many)
-CREATE TABLE utilisateur_notifications (
-    id_user BIGINT,
-    id_notification BIGINT,
-    lu BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (id_user, id_notification),
-    FOREIGN KEY (id_user) REFERENCES utilisateurs(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (id_notification) REFERENCES notifications(id) ON DELETE CASCADE
-);
-
--- =====================================================
--- Tables du personnel medical
--- =====================================================
-
--- Table du personnel (Staff)
-CREATE TABLE staff (
-    id_user BIGINT PRIMARY KEY,
+CREATE TABLE Staff (
+    id_entite BIGINT PRIMARY KEY,  -- correspond à Utilisateur.id_entite
     salaire DECIMAL(10,2),
     prime DECIMAL(10,2),
     date_recrutement DATE,
-    solde_conge INT DEFAULT 0,
-    id_cabinet BIGINT,
-    FOREIGN KEY (id_user) REFERENCES utilisateurs(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (id_cabinet) REFERENCES cabinets_medicaux(id_cabinet) ON DELETE SET NULL
+    solde_conge INT,
+    cabinet_id BIGINT NULL,
+
+    -- FK vers Utilisateur
+    CONSTRAINT fk_staff_utilisateur
+        FOREIGN KEY (id_entite)
+        REFERENCES utilisateur(id_entite)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_staff_cabinet
+        FOREIGN KEY (cabinet_id)
+        REFERENCES cabinet_medicale(id_entite)
+        ON DELETE SET NULL
 );
 
--- Table des medecins
-CREATE TABLE medecins (
-    id_user BIGINT PRIMARY KEY,
-    specialite VARCHAR(100) NOT NULL,
-    id_agenda BIGINT,
-    FOREIGN KEY (id_user) REFERENCES staff(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (id_agenda) REFERENCES agendas_mensuels(id_agenda) ON DELETE SET NULL
+CREATE TABLE Secretaire (
+    id_entite BIGINT PRIMARY KEY,
+
+    num_cnss VARCHAR(50) UNIQUE,
+    commission DECIMAL(10, 2),
+
+    CONSTRAINT fk_secretaire_staff
+        FOREIGN KEY (id_entite)
+        REFERENCES Staff(id_entite)
+        ON DELETE CASCADE
 );
 
--- Table des secretaires
-CREATE TABLE secretaires (
-    id_user BIGINT PRIMARY KEY,
-    num_cnss VARCHAR(50),
-    commission DECIMAL(5,2),
-    FOREIGN KEY (id_user) REFERENCES staff(id_user) ON DELETE CASCADE
+CREATE TABLE Medecin (
+    id_entite BIGINT PRIMARY KEY,
+    specialite VARCHAR(255),
+
+    CONSTRAINT fk_medecin_staff
+        FOREIGN KEY (id_entite)
+        REFERENCES Staff(id_entite)
+        ON DELETE CASCADE
 );
 
--- Table des administrateurs
-CREATE TABLE admins (
-    id_user BIGINT PRIMARY KEY,
-    FOREIGN KEY (id_user) REFERENCES staff(id_user) ON DELETE CASCADE
+CREATE TABLE Admin (
+    id_entite BIGINT PRIMARY KEY,
+    FOREIGN KEY (id_entite) REFERENCES utilisateur(id_entite) ON DELETE CASCADE
 );
 
--- =====================================================
--- Tables des cabinets medicaux
--- =====================================================
 
--- Table des cabinets medicaux
-CREATE TABLE cabinets_medicaux (
-    id_cabinet BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    logo VARCHAR(500),
-    numero VARCHAR(10),
-    rue VARCHAR(255),
-    code_postal VARCHAR(10),
-    ville VARCHAR(100),
-    pays VARCHAR(100),
-    complement VARCHAR(255),
-    cin VARCHAR(20),
-    tel1 VARCHAR(20),
-    tel2 VARCHAR(20),
-    site_web VARCHAR(500),
-    instagram VARCHAR(100),
-    facebook VARCHAR(500),
-    description TEXT,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
+CREATE TABLE DossierMedicale (
+    id_entite BIGINT PRIMARY KEY,
+    patient_id BIGINT UNIQUE NOT NULL,
+    medecin_id BIGINT NULL,
+
+    FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (patient_id) REFERENCES Patient(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (medecin_id) REFERENCES Medecin(id_entite) ON DELETE SET NULL
 );
 
--- Table des charges
-CREATE TABLE charges (
-    id_charge BIGINT PRIMARY KEY AUTO_INCREMENT,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    montant DECIMAL(10,2) NOT NULL,
-    date DATETIME NOT NULL,
-    id_cabinet BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_cabinet) REFERENCES cabinets_medicaux(id_cabinet) ON DELETE CASCADE
+CREATE TABLE SituationFinanciere (
+    id_entite BIGINT PRIMARY KEY,
+
+    totale_des_actes DECIMAL(10,2),
+    totale_paye DECIMAL(10,2),
+    credit DECIMAL(10,2),
+
+    statut VARCHAR(20) NOT NULL CHECK (
+        statut IN ('ACTIVE', 'ARCHIVED', 'CLOSED')
+    ),
+
+    en_promo VARCHAR(10) NOT NULL CHECK (
+        en_promo IN ('YES', 'NO')
+    ),
+
+    dossier_medicale_id BIGINT UNIQUE NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_situation_dossier
+            FOREIGN KEY (dossier_medicale_id)
+            REFERENCES DossierMedicale(id_entite)
+            ON DELETE CASCADE
 );
 
--- Table des revenus
-CREATE TABLE revenues (
-    id_revenue BIGINT PRIMARY KEY AUTO_INCREMENT,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    montant DECIMAL(10,2) NOT NULL,
-    date DATETIME NOT NULL,
-    id_cabinet BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_cabinet) REFERENCES cabinets_medicaux(id_cabinet) ON DELETE CASCADE
-);
+CREATE TABLE Consultation (
+    id_entite BIGINT PRIMARY KEY,
 
--- Table des statistiques
-CREATE TABLE statistiques (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(255) NOT NULL,
-    categorie ENUM('REVENUE', 'EXPENSE', 'PATIENT_COUNT', 'APPOINTMENT_COUNT', 'TREATMENT_COUNT') NOT NULL,
-    chiffre DECIMAL(15,2) NOT NULL,
-    date_calcul DATE NOT NULL,
-    id_cabinet BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_cabinet) REFERENCES cabinets_medicaux(id_cabinet) ON DELETE CASCADE
-);
-
--- =====================================================
--- Tables des patients et dossiers medicaux
--- =====================================================
-
--- Table des patients
-CREATE TABLE patients (
-    id_patient BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(255) NOT NULL,
-    date_de_naissance DATE NOT NULL,
-    sexe ENUM('MALE', 'FEMALE', 'OTHER') NOT NULL,
-    adresse TEXT,
-    telephone VARCHAR(20),
-    assurance ENUM('CNOPS', 'CNSS', 'RAMED', 'NONE') NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
-);
-
--- Table des dossiers medicaux
-CREATE TABLE dossiers_medicaux (
-    id_dm BIGINT PRIMARY KEY AUTO_INCREMENT,
-    date_de_creation DATE NOT NULL,
-    id_patient BIGINT NOT NULL UNIQUE,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_patient) REFERENCES patients(id_patient) ON DELETE CASCADE
-);
-
--- Table des antecedents
-CREATE TABLE antecedents (
-    id_antecedent BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(255) NOT NULL,
-    categorie VARCHAR(100) NOT NULL,
-    niveau_de_risque ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL,
-    id_patient BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_patient) REFERENCES patients(id_patient) ON DELETE CASCADE
-);
-
--- Table des factures
-CREATE TABLE factures (
-    id_facture BIGINT PRIMARY KEY AUTO_INCREMENT,
-    totale_facture DECIMAL(10,2) NOT NULL,
-    totale_paye DECIMAL(10,2) DEFAULT 0,
-    reste DECIMAL(10,2) NOT NULL,
-    statut ENUM('PAID', 'PENDING', 'OVERDUE') NOT NULL,
-    date_facture DATETIME NOT NULL,
-    id_patient BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_patient) REFERENCES patients(id_patient) ON DELETE CASCADE
-);
-
--- Table des situations financieres
-CREATE TABLE situations_financieres (
-    id_sf BIGINT PRIMARY KEY AUTO_INCREMENT,
-    totale_des_actes DECIMAL(10,2) NOT NULL,
-    totale_paye DECIMAL(10,2) NOT NULL,
-    credit DECIMAL(10,2) NOT NULL,
-    statut ENUM('ACTIVE', 'CLOSED', 'ARCHIVED') NOT NULL,
-    en_promo BOOLEAN DEFAULT FALSE,
-    id_dm BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_dm) REFERENCES dossiers_medicaux(id_dm) ON DELETE CASCADE
-);
-
--- =====================================================
--- Tables des consultations et interventions
--- =====================================================
-
--- Table des consultations
-CREATE TABLE consultations (
-    id_consultation BIGINT PRIMARY KEY AUTO_INCREMENT,
-    date DATE NOT NULL,
-    statut ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') NOT NULL,
+    date DATE,
+    statut VARCHAR(20) NOT NULL CHECK (
+        statut IN ('SCHEDULED', 'COMPLETED', 'CANCELLED')
+    ),
     observation_medecin TEXT,
-    id_dm BIGINT NOT NULL,
-    id_medecin BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_dm) REFERENCES dossiers_medicaux(id_dm) ON DELETE CASCADE,
-    FOREIGN KEY (id_medecin) REFERENCES medecins(id_user) ON DELETE CASCADE
+
+    dossier_medicale_id BIGINT NOT NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (dossier_medicale_id)
+        REFERENCES DossierMedicale(id_entite)
+        ON DELETE CASCADE
+
 );
 
--- Table des interventions medicales
-CREATE TABLE interventions_medecin (
-    id_im BIGINT PRIMARY KEY AUTO_INCREMENT,
-    prix_de_patient DECIMAL(10,2) NOT NULL,
-    num_dent INT,
-    id_consultation BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_consultation) REFERENCES consultations(id_consultation) ON DELETE CASCADE
+CREATE TABLE Facture (
+    id_entite BIGINT PRIMARY KEY, -- Héritage de BaseEntity
+
+    -- Champs Facture
+    totale_facture DECIMAL(10, 2),
+    totale_paye DECIMAL(10, 2),
+    reste DECIMAL(10, 2),
+
+    statut VARCHAR(20) NOT NULL CHECK (
+        statut IN ('PAID', 'PENDING', 'OVERDUE') -- Mappage de StatutFacture
+    ),
+
+    date_facture DATETIME NOT NULL,
+
+    consultation_id BIGINT UNIQUE NULL,
+
+    situation_financiere_id BIGINT UNIQUE NULL,
+
+    CONSTRAINT fk_facture_base FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+
+    CONSTRAINT fk_facture_consultation FOREIGN KEY (consultation_id)
+        REFERENCES Consultation(id_entite) ON DELETE SET NULL, -- Suppression en cascade non nécessaire ici si Facture est dépendante
+
+    CONSTRAINT fk_facture_situation_financiere FOREIGN KEY (situation_financiere_id)
+        REFERENCES SituationFinanciere(id_entite) ON DELETE SET NULL
 );
 
--- Table des actes medicaux
-CREATE TABLE actes (
-    id_acte BIGINT PRIMARY KEY AUTO_INCREMENT,
-    libelle VARCHAR(255) NOT NULL,
-    categorie VARCHAR(100) NOT NULL,
-    prix_de_base DECIMAL(10,2) NOT NULL,
-    id_im BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_im) REFERENCES interventions_medecin(id_im) ON DELETE CASCADE
+CREATE TABLE Certificat (
+    id_entite BIGINT PRIMARY KEY,
+    date_debut DATE,
+    date_fin DATE,
+    duree INT,
+    note_medecin VARCHAR(500),
+    consultation_id BIGINT UNIQUE NOT NULL,
+    FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (consultation_id) REFERENCES Consultation(id_entite) ON DELETE CASCADE
 );
 
--- =====================================================
--- Tables des rendez-vous et agenda
--- =====================================================
+CREATE TABLE RDV (
+    id_entite BIGINT PRIMARY KEY,  -- correspond à BaseEntity.id_entite
 
--- Table des agendas mensuels
-CREATE TABLE agendas_mensuels (
-    id_agenda BIGINT PRIMARY KEY AUTO_INCREMENT,
-    mois ENUM('JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 
-              'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER') NOT NULL,
-    jours_non_disponible JSON,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
-);
-
--- Table des rendez-vous
-CREATE TABLE rdv (
-    id_rdv BIGINT PRIMARY KEY AUTO_INCREMENT,
     date DATE NOT NULL,
     heure TIME NOT NULL,
-    motif TEXT NOT NULL,
-    statut ENUM('CONFIRMED', 'PENDING', 'CANCELLED', 'COMPLETED') NOT NULL,
+    motif VARCHAR(255),
+    statut VARCHAR(20) NOT NULL CHECK (
+        statut IN ('CONFIRMED', 'PENDING', 'CANCELLED', 'COMPLETED')
+    ),
     note_medecin TEXT,
-    id_patient BIGINT NOT NULL,
-    id_medecin BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_patient) REFERENCES patients(id_patient) ON DELETE CASCADE,
-    FOREIGN KEY (id_medecin) REFERENCES medecins(id_user) ON DELETE CASCADE
+
+    consultation_id BIGINT NULL,
+
+    dossier_medicale_id BIGINT NOT NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (consultation_id)
+        REFERENCES Consultation(id_entite)
+        ON DELETE SET NULL,
+
+    FOREIGN KEY (dossier_medicale_id)
+        REFERENCES DossierMedicale(id_entite)
+        ON DELETE CASCADE
 );
 
--- =====================================================
--- Tables des ordonnances et medicaments
--- =====================================================
+CREATE TABLE Ordonnance (
+    id_entite BIGINT PRIMARY KEY,
+    date_ordonnance DATE,
 
--- Table des ordonnances
-CREATE TABLE ordonnances (
-    id_ord BIGINT PRIMARY KEY AUTO_INCREMENT,
-    date DATE NOT NULL,
-    id_dm BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_dm) REFERENCES dossiers_medicaux(id_dm) ON DELETE CASCADE
+    dossier_medicale_id BIGINT NOT NULL,
+    consultation_id BIGINT NULL,
+
+    FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (dossier_medicale_id) REFERENCES DossierMedicale(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (consultation_id) REFERENCES Consultation(id_entite) ON DELETE SET NULL
 );
 
--- Table des medicaments
-CREATE TABLE medicaments (
-    id_mct BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(255) NOT NULL,
-    laboratoire VARCHAR(255) NOT NULL,
-    type VARCHAR(100) NOT NULL,
-    forme ENUM('TABLET', 'CAPSULE', 'SYRUP', 'INJECTION', 'CREAM', 'OINTMENT', 'DROPS') NOT NULL,
-    remboursable BOOLEAN DEFAULT FALSE,
-    prix_unitaire DECIMAL(10,2) NOT NULL,
-    description TEXT,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100)
-);
-
--- Table des prescriptions
-CREATE TABLE prescriptions (
-    id_pr BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE Prescription (
+    id_entite BIGINT PRIMARY KEY,
     quantite INT NOT NULL,
-    frequence VARCHAR(100) NOT NULL,
-    duree_en_jours INT NOT NULL,
-    id_ord BIGINT NOT NULL,
-    id_mct BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_ord) REFERENCES ordonnances(id_ord) ON DELETE CASCADE,
-    FOREIGN KEY (id_mct) REFERENCES medicaments(id_mct) ON DELETE CASCADE
+    frequence VARCHAR(255),
+    duree_en_jours INT,
+
+    ordonnance_id BIGINT NOT NULL,
+
+    medicament_id BIGINT NOT NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (ordonnance_id)
+        REFERENCES Ordonnance(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (medicament_id)
+        REFERENCES Medicament(id_entite)
+        ON DELETE CASCADE
 );
 
--- Table des certificats
-CREATE TABLE certificats (
-    id_certif BIGINT PRIMARY KEY AUTO_INCREMENT,
-    date_debut DATE NOT NULL,
-    date_fin DATE NOT NULL,
-    duree INT NOT NULL,
-    note_medecin TEXT,
-    id_dm BIGINT NOT NULL,
-    id_medecin BIGINT NOT NULL,
-    -- Attributs BaseEntity
-    id_entite BIGINT,
-    date_creation DATE DEFAULT (CURRENT_DATE),
-    date_derniere_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    modifie_par VARCHAR(100),
-    cree_par VARCHAR(100),
-    FOREIGN KEY (id_dm) REFERENCES dossiers_medicaux(id_dm) ON DELETE CASCADE,
-    FOREIGN KEY (id_medecin) REFERENCES medecins(id_user) ON DELETE CASCADE
+CREATE TABLE AgendaMensuel (
+    id_entite BIGINT PRIMARY KEY,
+
+    mois VARCHAR(20) NOT NULL,
+
+    annee INT NOT NULL CHECK (annee >= 2025),
+
+    medecin_id BIGINT NOT NULL,
+
+    CONSTRAINT chk_agenda_mois CHECK (
+        mois IN (
+            'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+            'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+        )
+    ),
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (medecin_id)
+        REFERENCES Medecin(id_entite)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_medecin_mois_annee UNIQUE (medecin_id, mois, annee)
 );
 
--- =====================================================
--- Index pour optimiser les performances
--- =====================================================
+CREATE TABLE AgendaMensuel_JourNonDisponible (
+    agenda_id BIGINT NOT NULL,
+    jour_non_disponible VARCHAR(20) NOT NULL CHECK (
+        jour_non_disponible IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY') -- Ajustez selon votre Enum Jour
+    ),
+    PRIMARY KEY (agenda_id, jour_non_disponible),
+    FOREIGN KEY (agenda_id)
+        REFERENCES AgendaMensuel(id_entite)
+        ON DELETE CASCADE
+);
 
--- Index sur les colonnes frequemment utilisees pour les recherches
-CREATE INDEX idx_patients_nom ON patients(nom);
-CREATE INDEX idx_patients_telephone ON patients(telephone);
-CREATE INDEX idx_rdv_date ON rdv(date);
-CREATE INDEX idx_rdv_statut ON rdv(statut);
-CREATE INDEX idx_factures_statut ON factures(statut);
-CREATE INDEX idx_factures_date ON factures(date_facture);
-CREATE INDEX idx_consultations_date ON consultations(date);
-CREATE INDEX idx_consultations_statut ON consultations(statut);
-CREATE INDEX idx_utilisateurs_email ON utilisateurs(email);
-CREATE INDEX idx_utilisateurs_login ON utilisateurs(login);
+CREATE TABLE Notification (
+    id_entite BIGINT PRIMARY KEY,
 
--- =====================================================
--- Contraintes de verification
--- =====================================================
+    titre VARCHAR(50) NOT NULL,
+    message TEXT,
+    date DATE,
+    time TIME,
+    type VARCHAR(50),
+    priorite VARCHAR(50),
 
--- Verification que le montant restant est coherent
-ALTER TABLE factures ADD CONSTRAINT chk_facture_reste 
-CHECK (reste = totale_facture - totale_paye);
+    CONSTRAINT chk_notification_titre CHECK (
+        titre IN ('APPOINTMENT_REMINDER', 'PAYMENT_DUE', 'NEW_MESSAGE', 'SYSTEM_UPDATE', 'EMERGENCY')
+    ),
+    CONSTRAINT chk_notification_type CHECK (
+        type IN ('ALERT', 'INFO', 'WARNING', 'SUCCESS')
+    ),
+    CONSTRAINT chk_notification_priorite CHECK (
+        priorite IN ('HIGH', 'MEDIUM', 'LOW')
+    ),
 
--- Verification que les dates sont coherentes
-ALTER TABLE certificats ADD CONSTRAINT chk_certificat_dates 
-CHECK (date_fin >= date_debut);
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE
+);
 
--- Verification que les montants sont positifs
-ALTER TABLE factures ADD CONSTRAINT chk_facture_montants 
-CHECK (totale_facture >= 0 AND totale_paye >= 0 AND reste >= 0);
+CREATE TABLE notification_utilisateur (
+    notification_id BIGINT NOT NULL,
+    utilisateur_id BIGINT NOT NULL,
+    est_lu BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (notification_id, utilisateur_id),
 
-ALTER TABLE charges ADD CONSTRAINT chk_charges_montant 
-CHECK (montant >= 0);
+    FOREIGN KEY (notification_id)
+        REFERENCES Notification(id_entite)
+        ON DELETE CASCADE,
 
-ALTER TABLE revenues ADD CONSTRAINT chk_revenues_montant 
-CHECK (montant >= 0);
+    FOREIGN KEY (utilisateur_id)
+        REFERENCES utilisateur(id_entite)
+        ON DELETE CASCADE
+);
 
--- =====================================================
--- Fin du schema
--- =====================================================
+CREATE TABLE role_privileges (
+    role_id BIGINT NOT NULL,
+    privilege VARCHAR(255) NOT NULL,
+    PRIMARY KEY (role_id, privilege),
+    CONSTRAINT fk_role_privilege FOREIGN KEY (role_id) REFERENCES role(id_entite) ON DELETE CASCADE
+);
+
+CREATE TABLE utilisateur_role (
+    utilisateur_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (utilisateur_id, role_id),
+    CONSTRAINT fk_utilisateur_role FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id_entite) ON DELETE CASCADE,
+    CONSTRAINT fk_role_utilisateur FOREIGN KEY (role_id) REFERENCES role(id_entite) ON DELETE CASCADE
+);
+
+CREATE TABLE Revenues (
+    id_entite BIGINT PRIMARY KEY,
+
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    montant DECIMAL(10,2) NOT NULL,
+    date DATETIME NOT NULL,
+
+    cabinet_medicale_id BIGINT NOT NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (cabinet_medicale_id)
+        REFERENCES cabinet_medicale(id_entite)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Statistiques (
+    id_entite BIGINT PRIMARY KEY,
+
+    nom VARCHAR(255) NOT NULL,
+    categorie VARCHAR(50) NOT NULL CHECK (
+        categorie IN ('REVENUE', 'EXPENSE', 'PATIENT_COUNT', 'APPOINTMENT_COUNT', 'TREATMENT_COUNT')
+    ),
+    chiffre DECIMAL(10,2),
+    date_calcul DATE,
+
+    cabinet_medicale_id BIGINT NOT NULL,
+
+    FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (cabinet_medicale_id)
+        REFERENCES cabinet_medicale(id_entite)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE charges (
+    id_entite BIGINT PRIMARY KEY,
+    titre VARCHAR(255),
+    description TEXT,
+    montant DECIMAL(10,2),
+    date DATETIME,
+    cabinet_id BIGINT NULL,
+    CONSTRAINT fk_charges_base FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    CONSTRAINT fk_charges_cabinet FOREIGN KEY (cabinet_id)
+        REFERENCES cabinet_medicale(id_entite) ON DELETE SET NULL
+);
+
+
+CREATE TABLE intervention_medecin (
+    id_entite BIGINT PRIMARY KEY,
+    prix_de_patient DECIMAL(10,2),
+    num_dent INT,
+    consultation_id BIGINT NULL,
+    acte_id BIGINT,
+    CONSTRAINT fk_intervention_base FOREIGN KEY (id_entite)
+        REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
+    CONSTRAINT fk_intervention_consultation FOREIGN KEY (consultation_id)
+        REFERENCES Consultation(id_entite) ON DELETE SET NULL,
+    CONSTRAINT fk_intervention_acte FOREIGN KEY (acte_id)
+        REFERENCES acte(id_entite) ON DELETE SET NULL
+);
+
+
+CREATE TABLE Patient_Antecedent (
+    patient_id BIGINT,
+    antecedent_id BIGINT,
+    PRIMARY KEY (patient_id, antecedent_id),
+    FOREIGN KEY (patient_id) REFERENCES Patient(id_entite) ON DELETE CASCADE,
+    FOREIGN KEY (antecedent_id) REFERENCES Antecedent(id_entite) ON DELETE CASCADE
+);
+

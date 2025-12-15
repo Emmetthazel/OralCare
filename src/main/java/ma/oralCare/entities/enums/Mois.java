@@ -1,8 +1,12 @@
 package ma.oralCare.entities.enums;
 
+import lombok.Getter;
+
 /**
  * Enumeration representant les mois de l annee
  */
+@Getter
+
 public enum Mois {
     JANUARY("Janvier"),
     FEBRUARY("Février"),
@@ -22,9 +26,6 @@ public enum Mois {
     Mois(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

@@ -1,8 +1,10 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le type d une notification
- */
+
+import lombok.Getter;
+
+@Getter
+
 public enum NotificationType {
     ALERT("Alerte"),
     INFO("Information"),
@@ -14,9 +16,6 @@ public enum NotificationType {
     NotificationType(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

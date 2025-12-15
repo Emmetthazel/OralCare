@@ -1,8 +1,10 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant les jours de la semaine
- */
+import lombok.Getter;
+
+
+@Getter
+
 public enum Jour {
     MONDAY("Lundi"),
     TUESDAY("Mardi"),
@@ -17,9 +19,6 @@ public enum Jour {
     Jour(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

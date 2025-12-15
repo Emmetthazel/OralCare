@@ -1,203 +1,317 @@
 package ma.oralCare.repository.modules.dossierMedical.impl;
 
-import ma.oralCare.entities.dossier.DossierMedicale;
-import ma.oralCare.entities.consultation.Consultation;
-import ma.oralCare.entities.consultation.Ordonnance;
-import ma.oralCare.entities.consultation.Certificat;
+import ma.oralCare.conf.SessionFactory;
+import ma.oralCare.entities.dossierMedical.Certificat;
+import ma.oralCare.entities.dossierMedical.Consultation;
+import ma.oralCare.entities.dossierMedical.DossierMedicale;
+import ma.oralCare.entities.dossierMedical.Ordonnance;
+import ma.oralCare.repository.common.RowMappers;
 import ma.oralCare.repository.modules.dossierMedical.api.DossierMedicaleRepository;
-import ma.oralCare.conf.SessionFactory; // Supposé exister
-import ma.oralCare.repository.common.RowMappers; // Supposé contenir mapDossierMedicale, mapConsultation, etc.
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class DossierMedicaleRepositoryImpl implements DossierMedicaleRepository {
 
-    // --- 1. Opérations CRUD de base (UC: Créer, Modifier, Supprimer un Dossier) ---
+    private static final String BASE_SELECT_SQL = """
+        SELECT dm.id_entite, dm.patient_id, dm.medecin_id, 
+               b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+        FROM DossierMedicale dm JOIN BaseEntity b ON dm.id_entite = b.id_entite
+        """;
 
-    @Override
-    public List<DossierMedicale> findAll() {
-        String sql = "SELECT * FROM DossierMedicale ORDER BY dateDeCreation DESC";
+    // =========================================================================
+    //                            MÉTHODES UTILITAIRES
+    // =========================================================================
+
+    private List<DossierMedicale> executeSelectQuery(String sql, Object... params) {
         List<DossierMedicale> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) out.add(RowMappers.mapDossierMedicale(rs));
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // RowMappers.mapDossierMedicale doit mapper les IDs patient et medecin
+                    DossierMedicale dossier = RowMappers.mapDossierMedicale(rs);
+                    out.add(dossier);
+                }
+            }
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération de tous les dossiers médicaux", e);
+            throw new RuntimeException("Erreur lors de l'exécution de la requête SELECT pour DossierMedicale.", e);
         }
         return out;
     }
 
+    // =========================================================================
+    //                                CRUD (Hérité)
+    // =========================================================================
+
     @Override
-    public DossierMedicale findById(Long id) {
-        // UC: Chercher et consulter un Dossier
-        String sql = "SELECT * FROM DossierMedicale WHERE id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return RowMappers.mapDossierMedicale(rs);
-                return null;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche du dossier médical par ID", e);
-        }
+    public List<DossierMedicale> findAll() {
+        String sql = BASE_SELECT_SQL + " ORDER BY dm.id_entite DESC";
+        return executeSelectQuery(sql);
     }
 
     @Override
-    public void create(DossierMedicale newElement) {
-        // UC: créer un Dossier
-        if (newElement == null || newElement.getPatient() == null) return;
-        String sql = "INSERT INTO DossierMedicale (dateDeCreation, patient_id, medecin_id, situationFinanciere_id) VALUES (?, ?, ?, ?)";
+    public Optional<DossierMedicale> findById(Long id) {
+        String sql = BASE_SELECT_SQL + " WHERE dm.id_entite = ?";
+        List<DossierMedicale> results = executeSelectQuery(sql, id);
+        return results.stream().findFirst();
+    }
 
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+    @Override
+    public void create(DossierMedicale dossier) {
+        Long baseId = null;
+        Connection c = null;
 
-            ps.setDate(1, Date.valueOf(newElement.getDateDeCreation()));
-            ps.setLong(2, newElement.getPatient().getId());
-            // Les IDs Medecin et SituationFinanciere peuvent être null au départ ou récupérés/créés
-            ps.setObject(3, newElement.getMedecin() != null ? newElement.getMedecin().getId() : null, JDBCType.BIGINT);
-            ps.setObject(4, newElement.getSituationFinanciere() != null ? newElement.getSituationFinanciere().getId() : null, JDBCType.BIGINT);
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now);
 
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        newElement.setId(generatedKeys.getLong(1));
-                    }
+        String sqlBase = "INSERT INTO BaseEntity(date_creation, date_derniere_modification, cree_par) VALUES(?, ?, ?)";
+        String sqlDossier = """
+            INSERT INTO DossierMedicale(id_entite, patient_id, medecin_id)
+            VALUES(?, ?, ?)
+            """;
+
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // 1. Insertion dans BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase, Statement.RETURN_GENERATED_KEYS)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                psBase.setNull(2, Types.TIMESTAMP);
+                if (dossier.getCreePar() != null) psBase.setLong(3, dossier.getCreePar());
+                else psBase.setNull(3, Types.BIGINT);
+                psBase.executeUpdate();
+
+                try (ResultSet keys = psBase.getGeneratedKeys()) {
+                    if (keys.next()) baseId = keys.getLong(1);
+                    else throw new SQLException("Échec de la récupération de l'ID BaseEntity pour DossierMedicale.");
                 }
+                dossier.setIdEntite(baseId);
+                dossier.setDateCreation(now);
             }
+
+            // 2. Insertion dans DossierMedicale
+            try (PreparedStatement psDossier = c.prepareStatement(sqlDossier)) {
+                psDossier.setLong(1, dossier.getIdEntite());
+
+                // patient_id (NOT NULL)
+                if (dossier.getPatient() == null || dossier.getPatient().getIdEntite() == null) {
+                    throw new IllegalArgumentException("Patient ID est obligatoire pour la création d'un DossierMedicale.");
+                }
+                psDossier.setLong(2, dossier.getPatient().getIdEntite());
+
+                // medecin_id (NULL)
+                if (dossier.getMedecin() != null && dossier.getMedecin().getIdEntite() != null) {
+                    psDossier.setLong(3, dossier.getMedecin().getIdEntite());
+                } else {
+                    psDossier.setNull(3, Types.BIGINT);
+                }
+
+                psDossier.executeUpdate();
+            }
+
+            c.commit();
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la création du dossier médical", e);
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error on create DossierMedicale.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la création du DossierMedicale.", e);
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
         }
     }
 
     @Override
-    public void update(DossierMedicale newValuesElement) {
-        // UC: Modifier un Dossier
-        if (newValuesElement == null || newValuesElement.getId() == null) return;
-        String sql = "UPDATE DossierMedicale SET dateDeCreation = ?, patient_id = ?, medecin_id = ?, situationFinanciere_id = ? WHERE id = ?";
+    public void update(DossierMedicale dossier) {
+        Connection c = null;
 
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTimestamp = Timestamp.valueOf(now);
 
-            ps.setDate(1, Date.valueOf(newValuesElement.getDateDeCreation()));
-            ps.setLong(2, newValuesElement.getPatient() != null ? newValuesElement.getPatient().getId() : null);
-            ps.setObject(3, newValuesElement.getMedecin() != null ? newValuesElement.getMedecin().getId() : null, JDBCType.BIGINT);
-            ps.setObject(4, newValuesElement.getSituationFinanciere() != null ? newValuesElement.getSituationFinanciere().getId() : null, JDBCType.BIGINT);
-            ps.setLong(5, newValuesElement.getId());
+        String sqlBase = "UPDATE BaseEntity SET date_derniere_modification=?, modifie_par=? WHERE id_entite=?";
+        String sqlDossier = """
+            UPDATE DossierMedicale SET patient_id=?, medecin_id=?
+            WHERE id_entite=?
+            """;
 
-            ps.executeUpdate();
+        try {
+            c = SessionFactory.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // 1. Mise à jour de BaseEntity
+            try (PreparedStatement psBase = c.prepareStatement(sqlBase)) {
+                psBase.setTimestamp(1, nowTimestamp);
+                if (dossier.getModifiePar() != null) psBase.setLong(2, dossier.getModifiePar());
+                else psBase.setNull(2, Types.BIGINT);
+                psBase.setLong(3, dossier.getIdEntite());
+                psBase.executeUpdate();
+                dossier.setDateDerniereModification(now);
+            }
+
+            // 2. Mise à jour de DossierMedicale
+            try (PreparedStatement psDossier = c.prepareStatement(sqlDossier)) {
+
+                // patient_id (NOT NULL)
+                if (dossier.getPatient() == null || dossier.getPatient().getIdEntite() == null) {
+                    throw new IllegalArgumentException("Patient ID est obligatoire pour la mise à jour d'un DossierMedicale.");
+                }
+                psDossier.setLong(1, dossier.getPatient().getIdEntite());
+
+                // medecin_id (NULL)
+                if (dossier.getMedecin() != null && dossier.getMedecin().getIdEntite() != null) {
+                    psDossier.setLong(2, dossier.getMedecin().getIdEntite());
+                } else {
+                    psDossier.setNull(2, Types.BIGINT);
+                }
+
+                psDossier.setLong(3, dossier.getIdEntite());
+                psDossier.executeUpdate();
+            }
+
+            c.commit();
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la mise à jour du dossier médical", e);
+            if (c != null) {
+                try { c.rollback(); }
+                catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error on update DossierMedicale.", rollbackEx); }
+            }
+            throw new RuntimeException("Erreur lors de la mise à jour du DossierMedicale.", e);
+        } finally {
+            if (c != null) {
+                try {
+                    c.setAutoCommit(true);
+                    c.close();
+                } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); }
+            }
         }
     }
 
     @Override
     public void delete(DossierMedicale dossier) {
-        if (dossier != null && dossier.getId() != null) deleteById(dossier.getId());
+        if (dossier != null) deleteById(dossier.getIdEntite());
     }
 
     @Override
     public void deleteById(Long id) {
-        // UC: Supprimer un Dossier
-        String sql = "DELETE FROM DossierMedicale WHERE id = ?";
+        // La suppression dans BaseEntity déclenche la cascade
+        String sql = "DELETE FROM BaseEntity WHERE id_entite = ?";
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la suppression du dossier médical par ID", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erreur lors de la suppression du DossierMedicale par ID.", e); }
     }
 
-    // --- 2. Implémentation des Méthodes de Recherche Spécifiques ---
+    // =========================================================================
+    //                            MÉTHODES SPÉCIFIQUES
+    // =========================================================================
 
     @Override
     public Optional<DossierMedicale> findByPatientId(Long patientId) {
-        // Souvent utilisé dans le cadre de "Consulter Dossier Médical" (via le Patient)
-        String sql = "SELECT * FROM DossierMedicale WHERE patient_id = ?";
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, patientId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return Optional.of(RowMappers.mapDossierMedicale(rs));
-                return Optional.empty();
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche du dossier médical par Patient ID", e);
-        }
+        String sql = BASE_SELECT_SQL + " WHERE dm.patient_id = ?";
+        List<DossierMedicale> results = executeSelectQuery(sql, patientId);
+        return results.stream().findFirst();
     }
 
     @Override
     public List<DossierMedicale> findByMedecinId(Long medecinId) {
-        String sql = "SELECT * FROM DossierMedicale WHERE medecin_id = ? ORDER BY dateDeCreation DESC";
-        List<DossierMedicale> out = new ArrayList<>();
-        try (Connection c = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setLong(1, medecinId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(RowMappers.mapDossierMedicale(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche des dossiers médicaux par Médecin ID", e);
-        }
-        return out;
+        String sql = BASE_SELECT_SQL + " WHERE dm.medecin_id = ? ORDER BY dm.id_entite DESC";
+        return executeSelectQuery(sql, medecinId);
     }
 
-    // --- 3. Implémentation des Fonctions d'Association ---
+    // =========================================================================
+    //                           NAVIGATION (Relations One-to-Many)
+    // =========================================================================
 
     @Override
     public List<Consultation> findConsultationsByDossierId(Long dossierId) {
-        // Récupère les consultations associées au Dossier (Consultation est Many-to-One vers DossierMedicale)
-        String sql = "SELECT * FROM Consultation WHERE dossierMedicale_id = ? ORDER BY date DESC";
-        List<Consultation> out = new ArrayList<>();
+        String sql = """
+            SELECT c.id_entite, c.date, c.statut, c.observation_medecin, c.dossier_medicale_id,
+                   b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+            FROM Consultation c JOIN BaseEntity b ON c.id_entite = b.id_entite
+            WHERE c.dossier_medicale_id = ?
+            ORDER BY c.date DESC
+        """;
+        List<Consultation> consultations = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, dossierId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(RowMappers.mapConsultation(rs));
+                while (rs.next()) {
+                    consultations.add(RowMappers.mapConsultation(rs));
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération des consultations du dossier", e);
+            throw new RuntimeException("Erreur lors de la récupération des consultations par Dossier ID.", e);
         }
-        return out;
+        return consultations;
     }
 
     @Override
     public List<Ordonnance> findOrdonnancesByDossierId(Long dossierId) {
-        // Récupère les ordonnances associées au Dossier (Ordonnance est Many-to-One vers DossierMedicale)
-        String sql = "SELECT * FROM Ordonnance WHERE dossierMedicale_id = ? ORDER BY date DESC";
-        List<Ordonnance> out = new ArrayList<>();
+        String sql = """
+            SELECT o.id_entite, o.date_ordonnance, o.consultation_id, o.dossier_medicale_id,
+                   b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+            FROM Ordonnance o JOIN BaseEntity b ON o.id_entite = b.id_entite
+            WHERE o.dossier_medicale_id = ?
+            ORDER BY o.date_ordonnance DESC
+        """;
+        List<Ordonnance> ordonnances = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, dossierId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(RowMappers.mapOrdonnance(rs));
+                while (rs.next()) {
+                    ordonnances.add(RowMappers.mapOrdonnance(rs));
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération des ordonnances du dossier", e);
+            throw new RuntimeException("Erreur lors de la récupération des ordonnances par Dossier ID.", e);
         }
-        return out;
+        return ordonnances;
     }
 
     @Override
     public List<Certificat> findCertificatsByDossierId(Long dossierId) {
-        // Récupère les certificats associés au Dossier (Certificat est Many-to-One vers DossierMedicale)
-        String sql = "SELECT * FROM Certificat WHERE dossierMedicale_id = ? ORDER BY dateDebut DESC";
-        List<Certificat> out = new ArrayList<>();
+        // Le schéma Certificat est lié à Consultation, qui est liée à DossierMedicale.
+        // On peut faire une jointure pour récupérer les certificats liés au dossier via la consultation.
+        String sql = """
+            SELECT cert.id_entite, cert.date_debut, cert.date_fin, cert.duree, cert.note_medecin, cert.consultation_id,
+                   b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
+            FROM Certificat cert
+            JOIN BaseEntity b ON cert.id_entite = b.id_entite
+            JOIN Consultation c ON cert.consultation_id = c.id_entite
+            WHERE c.dossier_medicale_id = ?
+            ORDER BY cert.date_debut DESC
+        """;
+        List<Certificat> certificats = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, dossierId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(RowMappers.mapCertificat(rs));
+                while (rs.next()) {
+                    certificats.add(RowMappers.mapCertificat(rs));
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la récupération des certificats du dossier", e);
+            throw new RuntimeException("Erreur lors de la récupération des certificats par Dossier ID.", e);
         }
-        return out;
+        return certificats;
     }
 }

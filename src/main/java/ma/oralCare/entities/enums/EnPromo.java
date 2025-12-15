@@ -1,8 +1,12 @@
 package ma.oralCare.entities.enums;
 
+import lombok.Getter;
+
 /**
  * Enumeration representant le statut de promotion d un patient
  */
+@Getter
+
 public enum EnPromo {
     YES("En promotion"),
     NO("Pas en promotion");
@@ -12,9 +16,6 @@ public enum EnPromo {
     EnPromo(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 

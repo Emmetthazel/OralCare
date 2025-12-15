@@ -1,8 +1,10 @@
 package ma.oralCare.entities.enums;
 
-/**
- * Enumeration representant le libelle d un role
- */
+
+import lombok.Getter;
+
+@Getter
+
 public enum RoleLibelle {
     ADMIN("Administrateur"),
     DOCTOR("Médecin"),
@@ -14,9 +16,6 @@ public enum RoleLibelle {
     RoleLibelle(String libelle) {
         this.libelle = libelle;
     }
-    
-    public String getLibelle() {
-        return libelle;
-    }
+
 }
 
