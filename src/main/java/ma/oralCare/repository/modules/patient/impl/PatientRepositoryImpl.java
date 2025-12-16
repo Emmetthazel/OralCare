@@ -356,11 +356,16 @@ public class PatientRepositoryImpl implements PatientRepository {
     @Override
     public List<Antecedent> getAntecedentsOfPatient(Long patientId) {
         String sql = """
-            SELECT a.* FROM Antecedent a 
-            JOIN Patient_Antecedent pa ON pa.antecedent_id = a.id_entite
-            WHERE pa.patient_id = ?
-            ORDER BY a.categorie, a.niveau_de_risque, a.nom
-            """;
+        SELECT 
+            a.*, 
+            b.date_creation, b.date_derniere_modification, 
+            b.cree_par, b.modifie_par 
+        FROM Antecedent a 
+        JOIN Patient_Antecedent pa ON pa.antecedent_id = a.id_entite
+        JOIN BaseEntity b ON a.id_entite = b.id_entite  /* <-- JOINTURE AJOUTÉE */
+        WHERE pa.patient_id = ?
+        ORDER BY a.categorie, a.niveau_de_risque, a.nom
+        """;
         List<Antecedent> out = new ArrayList<>();
         try (Connection c = SessionFactory.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -368,7 +373,9 @@ public class PatientRepositoryImpl implements PatientRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(RowMappers.mapAntecedent(rs));
             }
-        } catch (SQLException e) { throw new RuntimeException("Erreur lors de getAntecedentsOfPatient.", e); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de getAntecedentsOfPatient.", e);
+        }
         return out;
     }
 

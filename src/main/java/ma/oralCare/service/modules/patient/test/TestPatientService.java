@@ -64,8 +64,8 @@ public class TestPatientService {
 
         System.out.println(
                 patientTest.getIdEntite() != null
-                        ? "✅ [PatientService] CREATE OK. ID: " + patientTest.getIdEntite()
-                        : "❌ [PatientService] CREATE Échec (ID non généré)."
+                        ? "[PatientService] CREATE OK. ID: " + patientTest.getIdEntite()
+                        : "[PatientService] CREATE Échec (ID non généré)."
         );
 
         // Création d'un antécédent puis liaison au patient
@@ -74,13 +74,13 @@ public class TestPatientService {
 
         System.out.println(
                 antecedentTest.getIdEntite() != null
-                        ? "✅ [AntecedentService] CREATE OK. ID: " + antecedentTest.getIdEntite()
-                        : "❌ [AntecedentService] CREATE Échec (ID non généré)."
+                        ? "[AntecedentService] CREATE OK. ID: " + antecedentTest.getIdEntite()
+                        : "[AntecedentService] CREATE Échec (ID non généré)."
         );
 
         if (patientTest.getIdEntite() != null && antecedentTest.getIdEntite() != null) {
             patientService.addAntecedentToPatient(patientTest.getIdEntite(), antecedentTest.getIdEntite());
-            System.out.println("✅ [PatientService] Lien Patient <-> Antécédent créé.");
+            System.out.println("[PatientService] Lien Patient <-> Antécédent créé.");
         }
     }
 
@@ -95,24 +95,24 @@ public class TestPatientService {
         Optional<Patient> byId = patientService.getPatientById(patientTest.getIdEntite());
         System.out.println(
                 byId.isPresent()
-                        ? "✅ [PatientService] READ byId OK. Nom: " + byId.get().getNom()
-                        : "❌ [PatientService] READ byId Échec."
+                        ? "[PatientService] READ byId OK. Nom: " + byId.get().getNom()
+                        : "[PatientService] READ byId Échec."
         );
 
         // Recherche par email
         Optional<Patient> byEmail = patientService.getPatientByEmail(patientTest.getEmail());
         System.out.println(
                 byEmail.isPresent()
-                        ? "✅ [PatientService] READ byEmail OK."
-                        : "❌ [PatientService] READ byEmail Échec."
+                        ? "[PatientService] READ byEmail OK."
+                        : "[PatientService] READ byEmail Échec."
         );
 
         // Liste d'antécédents du patient
         List<Antecedent> antecedents = patientService.getAntecedentsOfPatient(patientTest.getIdEntite());
         System.out.println(
                 !antecedents.isEmpty()
-                        ? "✅ [PatientService] READ AntecedentsOfPatient OK. Count: " + antecedents.size()
-                        : "❌ [PatientService] READ AntecedentsOfPatient Échec."
+                        ? "[PatientService] READ AntecedentsOfPatient OK. Count: " + antecedents.size()
+                        : "[PatientService] READ AntecedentsOfPatient Échec."
         );
     }
 
@@ -131,8 +131,8 @@ public class TestPatientService {
         Optional<Patient> updated = patientService.getPatientById(patientTest.getIdEntite());
         System.out.println(
                 updated.isPresent() && newTel.equals(updated.get().getTelephone())
-                        ? "✅ [PatientService] UPDATE OK. Nouveau Tel: " + updated.get().getTelephone()
-                        : "❌ [PatientService] UPDATE Échec."
+                        ? "[PatientService] UPDATE OK. Nouveau Tel: " + updated.get().getTelephone()
+                        : "[PatientService] UPDATE Échec."
         );
     }
 
@@ -149,8 +149,8 @@ public class TestPatientService {
             List<Antecedent> afterUnlink = patientService.getAntecedentsOfPatient(patientTest.getIdEntite());
             System.out.println(
                     afterUnlink.isEmpty()
-                            ? "✅ [PatientService] UNLINK Antecedent OK."
-                            : "❌ [PatientService] UNLINK Antecedent Échec."
+                            ? "[PatientService] UNLINK Antecedent OK."
+                            : "[PatientService] UNLINK Antecedent Échec."
             );
         }
 
@@ -161,8 +161,8 @@ public class TestPatientService {
                     .isPresent();
             System.out.println(
                     !stillPresent
-                            ? "✅ [AntecedentService] DELETE OK."
-                            : "❌ [AntecedentService] DELETE Échec."
+                            ? "[AntecedentService] DELETE OK."
+                            : "[AntecedentService] DELETE Échec."
             );
         }
 
@@ -173,8 +173,8 @@ public class TestPatientService {
                     .isPresent();
             System.out.println(
                     !stillPresent
-                            ? "✅ [PatientService] DELETE OK."
-                            : "❌ [PatientService] DELETE Échec."
+                            ? "[PatientService] DELETE OK."
+                            : "[PatientService] DELETE Échec."
             );
         }
     }
