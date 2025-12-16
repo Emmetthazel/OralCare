@@ -963,18 +963,18 @@ public class TestRepo {
                 Optional<RDV> updatedRdvOpt = rdvRepository.findById(rdvToUpdate.getIdEntite());
 
                 if (updatedRdvOpt.isPresent() && updatedRdvOpt.get().getMotif().equals(nouveauMotif)) {
-                    System.out.println("✅ [RDV] UPDATE OK. Nouveau Motif/Date: " + updatedRdvOpt.get().getMotif());
+                    System.out.println("[RDV] UPDATE OK. Nouveau Motif/Date: " + updatedRdvOpt.get().getMotif());
                     RDV rdvUpdatedStatut = rdvRepository.updateStatut(rdvToUpdate.getIdEntite(), StatutRDV.CONFIRMED);
                     if (rdvUpdatedStatut != null && rdvUpdatedStatut.getStatut() == StatutRDV.CONFIRMED) {
-                        System.out.println("✅ [RDV] UPDATE_STATUT OK. Statut: " + rdvUpdatedStatut.getStatut());
+                        System.out.println("[RDV] UPDATE_STATUT OK. Statut: " + rdvUpdatedStatut.getStatut());
                     } else {
-                        System.err.println("❌ [RDV] UPDATE_STATUT Échec.");
+                        System.err.println("[RDV] UPDATE_STATUT Échec.");
                     }
                 } else {
-                    System.err.println("❌ [RDV] UPDATE Échec.");
+                    System.err.println("[RDV] UPDATE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [RDV] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[RDV] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
             }
         }
 
@@ -995,12 +995,12 @@ public class TestRepo {
                             && nouveauMontant.compareTo(updatedC.getMontant()) == 0 // Utilisation de compareTo pour BigDecimal
                             && MODIFICATEUR_ID.equals(updatedC.getModifiePar())) {
 
-                        System.out.println("✅ [Charges] UPDATE OK. Nouveau Montant: " + updatedC.getMontant());
+                        System.out.println("[Charges] UPDATE OK. Nouveau Montant: " + updatedC.getMontant());
                     } else {
-                        System.err.println("❌ [Charges] UPDATE Échec. Montant attendu: " + nouveauMontant + ", Trouvé: " + (updatedC != null ? updatedC.getMontant() : "null"));
+                        System.err.println("[Charges] UPDATE Échec. Montant attendu: " + nouveauMontant + ", Trouvé: " + (updatedC != null ? updatedC.getMontant() : "null"));
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Charges] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Charges] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -1016,19 +1016,19 @@ public class TestRepo {
                 antecedentRepository.unlinkAntecedentFromPatient(antecedentTest.getIdEntite(), patientTest.getIdEntite());
                 List<Antecedent> check = antecedentRepository.findByPatientId(patientTest.getIdEntite());
                 if (check.isEmpty()) {
-                    System.out.println("✅ [Antecedent] Lien M-to-M retiré OK.");
+                    System.out.println("[Antecedent] Lien M-to-M retiré OK.");
                 } else {
-                    System.err.println("❌ [Antecedent] Retrait Lien M-to-M Échec. Le lien persiste.");
+                    System.err.println("[Antecedent] Retrait Lien M-to-M Échec. Le lien persiste.");
                 }
 
                 antecedentRepository.deleteById(antecedentTest.getIdEntite());
                 if (antecedentRepository.findById(antecedentTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Antecedent] DELETE OK.");
+                    System.out.println("[Antecedent] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Antecedent] DELETE Échec.");
+                    System.err.println("[Antecedent] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Antecedent] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Antecedent] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1037,12 +1037,12 @@ public class TestRepo {
                 certificatRepository.deleteById(certificatTest.getIdEntite());
                 Optional<Certificat> check = certificatRepository.findById(certificatTest.getIdEntite());
                 if (check.isEmpty()) {
-                    System.out.println("✅ [Certificat] DELETE OK.");
+                    System.out.println("[Certificat] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Certificat] DELETE Échec (L'entité persiste).");
+                    System.err.println("[Certificat] DELETE Échec (L'entité persiste).");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Certificat] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Certificat] DELETE Échec critique: " + e.getMessage());
             }
         }
         if (consultationTest != null) {
@@ -1050,12 +1050,12 @@ public class TestRepo {
                 consultationRepository.deleteById(consultationTest.getIdEntite());
                 Optional<Consultation> check = consultationRepository.findById(consultationTest.getIdEntite());
                 if (check.isEmpty()) {
-                    System.out.println("✅ [Consultation] DELETE OK.");
+                    System.out.println("[Consultation] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Consultation] DELETE Échec (L'entité persiste).");
+                    System.err.println("[Consultation] DELETE Échec (L'entité persiste).");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Consultation] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Consultation] DELETE Échec critique: " + e.getMessage());
             }
         }
         if (dossierTest != null) {
@@ -1063,12 +1063,12 @@ public class TestRepo {
                 dossierRepository.deleteById(dossierTest.getIdEntite());
                 Optional<DossierMedicale> check = dossierRepository.findById(dossierTest.getIdEntite());
                 if (check.isEmpty()) {
-                    System.out.println("✅ [Dossier] DELETE OK.");
+                    System.out.println("[Dossier] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Dossier] DELETE Échec (L'entité persiste).");
+                    System.err.println("[Dossier] DELETE Échec (L'entité persiste).");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Dossier] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Dossier] DELETE Échec critique: " + e.getMessage());
             }
         }
         if (chargesTest != null) {
@@ -1077,24 +1077,24 @@ public class TestRepo {
                 chargesRepository.deleteById(chargesId);
                 Optional<Charges> check = chargesRepository.findById(chargesId);
                 if (check.isEmpty()) {
-                    System.out.println("✅ [Charges] DELETE OK.");
+                    System.out.println("[Charges] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Charges] DELETE Échec (L'entité persiste). ID: " + chargesId);
+                    System.err.println("[Charges] DELETE Échec (L'entité persiste). ID: " + chargesId);
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Charges] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Charges] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
             }
         }
         if (patientTest != null) {
             try {
                 patientRepository.deleteById(patientTest.getIdEntite());
                 if (patientRepository.findById(patientTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Patient] DELETE OK.");
+                    System.out.println("[Patient] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Patient] DELETE Échec.");
+                    System.err.println("[Patient] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Patient] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Patient] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1103,12 +1103,12 @@ public class TestRepo {
             try {
                 acteRepository.deleteById(acteTest.getIdEntite());
                 if (acteRepository.findById(acteTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Acte] DELETE OK.");
+                    System.out.println("[Acte] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Acte] DELETE Échec.");
+                    System.err.println("[Acte] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Acte] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Acte] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1119,12 +1119,12 @@ public class TestRepo {
                 // sinon, il faudrait une méthode explicite `removeUtilisateurFromNotification`.
                 notificationRepository.deleteById(notificationTest.getIdEntite());
                 if (notificationRepository.findById(notificationTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Notification] DELETE OK.");
+                    System.out.println("[Notification] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Notification] DELETE Échec.");
+                    System.err.println("[Notification] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Notification] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Notification] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1132,12 +1132,12 @@ public class TestRepo {
             try {
                 agendaRepository.deleteById(agendaTest.getIdEntite());
                 if (agendaRepository.findById(agendaTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Agenda] DELETE OK.");
+                    System.out.println("[Agenda] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Agenda] DELETE Échec.");
+                    System.err.println("[Agenda] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Agenda] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Agenda] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1146,12 +1146,12 @@ public class TestRepo {
             try {
                 medecinRepository.deleteById(medecinTest.getIdEntite());
                 if (medecinRepository.findById(medecinTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Medecin] DELETE OK.");
+                    System.out.println("[Medecin] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Medecin] DELETE Échec.");
+                    System.err.println("[Medecin] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Medecin] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Medecin] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1160,12 +1160,12 @@ public class TestRepo {
             try {
                 secretaireRepository.deleteById(secretaireTest.getIdEntite());
                 if (secretaireRepository.findById(secretaireTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Secretaire] DELETE OK.");
+                    System.out.println("[Secretaire] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Secretaire] DELETE Échec.");
+                    System.err.println("[Secretaire] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Secretaire] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Secretaire] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1174,12 +1174,12 @@ public class TestRepo {
             try {
                 staffRepository.deleteById(staffTest.getIdEntite());
                 if (staffRepository.findById(staffTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Staff] DELETE OK.");
+                    System.out.println("[Staff] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Staff] DELETE Échec.");
+                    System.err.println("[Staff] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Staff] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Staff] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1188,12 +1188,12 @@ public class TestRepo {
             try {
                 adminRepository.deleteById(adminTest.getIdEntite());
                 if (adminRepository.findById(adminTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Admin] DELETE OK.");
+                    System.out.println("[Admin] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Admin] DELETE Échec.");
+                    System.err.println("[Admin] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Admin] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Admin] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1202,12 +1202,12 @@ public class TestRepo {
             try {
                 rdvRepository.delete(rdvTest);
                 if (rdvRepository.findById(rdvId).isEmpty()) {
-                    System.out.println("✅ [RDV] DELETE OK.");
+                    System.out.println("[RDV] DELETE OK.");
                 } else {
-                    System.err.println("❌ [RDV] DELETE Échec (Entité toujours présente). ID: " + rdvId);
+                    System.err.println("[RDV] DELETE Échec (Entité toujours présente). ID: " + rdvId);
                 }
             } catch (Exception e) {
-                System.err.println("❌ [RDV] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[RDV] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
             }
         }
 
@@ -1217,12 +1217,12 @@ public class TestRepo {
             try {
                 utilisateurRepository.deleteById(utilisateurTest.getIdEntite());
                 if (utilisateurRepository.findById(utilisateurTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Utilisateur] DELETE OK.");
+                    System.out.println("[Utilisateur] DELETE OK.");
                 } else {
-                    System.err.println("❌ [Utilisateur] DELETE Échec.");
+                    System.err.println("[Utilisateur] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Utilisateur] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Utilisateur] DELETE Échec critique: " + e.getMessage());
             }
         }
 
@@ -1231,12 +1231,12 @@ public class TestRepo {
             try {
                 cabinetRepository.deleteById(cabinetTest.getIdEntite());
                 if (cabinetRepository.findById(cabinetTest.getIdEntite()).isEmpty()) {
-                    System.out.println("✅ [Cabinet] DELETE OK (Nettoyage final).");
+                    System.out.println("[Cabinet] DELETE OK (Nettoyage final).");
                 } else {
-                    System.err.println("❌ [Cabinet] DELETE Échec (Nettoyage final).");
+                    System.err.println("[Cabinet] DELETE Échec (Nettoyage final).");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Cabinet] DELETE Échec critique: " + e.getMessage());
+                System.err.println("[Cabinet] DELETE Échec critique: " + e.getMessage());
             }
         }
         // --- Suppression RDV ---
@@ -1247,12 +1247,12 @@ public class TestRepo {
                 Optional<RDV> deletedRdv = rdvRepository.findById(id);
 
                 if (deletedRdv.isEmpty()) {
-                    System.out.println("✅ [RDV] DELETE OK.");
+                    System.out.println("[RDV] DELETE OK.");
                 } else {
-                    System.err.println("❌ [RDV] DELETE Échec.");
+                    System.err.println("[RDV] DELETE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [RDV] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[RDV] DELETE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
             }
         }
 

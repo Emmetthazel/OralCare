@@ -31,17 +31,17 @@ public class TestAuthSupportServices {
         try {
             validator.validate(request);
             validator.validateNewPassword("newSecret123");
-            System.out.println("✅ CredentialsValidator OK");
+            System.out.println("CredentialsValidator OK");
         } catch (Exception e) {
-            System.err.println("❌ CredentialsValidator Échec: " + e.getMessage());
+            System.err.println("CredentialsValidator Échec: " + e.getMessage());
         }
 
         // 2. Encodage de mot de passe
         String encoded = encoder.encode(request.password());
         boolean matches = encoder.matches("secret123", encoded);
         System.out.println(matches
-                ? "✅ PasswordEncoder OK"
-                : "❌ PasswordEncoder Échec");
+                ? "PasswordEncoder OK"
+                : "PasswordEncoder Échec");
 
         // 3. Vérification d'autorisation basique
         UserPrincipal principal = new UserPrincipal(
@@ -57,8 +57,8 @@ public class TestAuthSupportServices {
         boolean hasPriv = authorizationService.hasPrivilege(principal, "DASHBOARD_VIEW");
 
         System.out.println(hasAdmin && hasAny && hasPriv
-                ? "✅ AuthorizationService OK"
-                : "❌ AuthorizationService Échec");
+                ? "AuthorizationService OK"
+                : "AuthorizationService Échec");
 
         System.out.println("=== FIN TEST AUTH SUPPORT SERVICES ===");
     }
