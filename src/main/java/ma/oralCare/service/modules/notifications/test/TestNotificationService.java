@@ -33,7 +33,7 @@ public class TestNotificationService {
 
         Notification notif = dbUtils.createNotificationObject(List.of(destinataire));
         notificationService.createNotification(notif);
-        System.out.println("✅ Notification créée via service. ID = " + notif.getIdEntite());
+        System.out.println("Notification créée via service. ID = " + notif.getIdEntite());
 
         List<Notification> notifs = notificationService.getNotificationsForUser(destinataire.getIdEntite());
         System.out.println("Notifications pour utilisateur (id=" + destinataire.getIdEntite() + "): " + notifs.size());
