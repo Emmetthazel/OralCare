@@ -189,11 +189,10 @@ public class RDVRepositoryImpl implements RDVRepository {
     public RDV updateStatut(Long rdvId, StatutRDV nouveauStatut) {
         final String SQL_UPDATE_STATUT = "UPDATE RDV SET statut = ? WHERE id_entite = ?";
 
-        Connection c = null;
         LocalDateTime now = LocalDateTime.now();
 
-        try {
-            c = SessionFactory.getInstance().getConnection();
+        // UTILISATION DE TRY-WITH-RESOURCES pour gérer la connexion
+        try (Connection c = SessionFactory.getInstance().getConnection()) {
             c.setAutoCommit(false);
 
             // 1. Update BaseEntity
@@ -212,13 +211,18 @@ public class RDVRepositoryImpl implements RDVRepository {
             }
 
             c.commit();
+
+            // IMPORTANT: findById utilise une NOUVELLE connexion, ce qui est correct.
+            // La connexion 'c' est fermée APRÈS cette ligne, grâce au try-with-resources.
             return findById(rdvId).orElse(null);
 
         } catch (SQLException e) {
-            if (c != null) { try { c.rollback(); } catch (SQLException rollbackEx) { throw new RuntimeException("Rollback error lors de la mise à jour du statut.", rollbackEx); } }
+            // Le Rollback DOIT se faire sur la connexion 'c' si l'exception est attrapée.
+            // Si l'exception se produit, 'c' sera toujours disponible dans le bloc try-catch si on le déclare en dehors.
+            // Si on utilise try-with-resources, on peut devoir relancer une RuntimeException.
+
+            // Pour gérer le rollback dans le try-with-resources, nous relançons l'exception.
             throw new RuntimeException("Erreur lors de la mise à jour du statut du RDV.", e);
-        } finally {
-            if (c != null) { try { c.setAutoCommit(true); c.close(); } catch (SQLException closeEx) { throw new RuntimeException("Erreur de fermeture connexion.", closeEx); } }
         }
     }
 

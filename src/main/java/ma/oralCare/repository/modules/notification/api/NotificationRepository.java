@@ -25,4 +25,6 @@ public interface NotificationRepository extends CrudRepository<Notification, Lon
     void markAsRead(Long notificationId, Long utilisateurId);
 
     void markAllAsReadByUtilisateurId(Long utilisateurId);
+
+    boolean isNotificationReadByUser(Long notificationId, Long utilisateurId);
 }

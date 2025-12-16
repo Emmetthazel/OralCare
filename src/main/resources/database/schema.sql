@@ -247,7 +247,7 @@ CREATE TABLE Facture (
     reste DECIMAL(10, 2),
 
     statut VARCHAR(20) NOT NULL CHECK (
-        statut IN ('PAID', 'PENDING', 'OVERDUE') -- Mappage de StatutFacture
+        statut IN ('PAID', 'PENDING', 'OVERDUE', 'CANCELLED') -- Mappage de StatutFacture
     ),
 
     date_facture DATETIME NOT NULL,

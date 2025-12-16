@@ -4,7 +4,8 @@ package ma.oralCare.entities.enums;
 public enum StatutFacture {
     PAID("Payée"),
     PENDING("En attente"),
-    OVERDUE("En retard");
+    OVERDUE("En retard"),
+    CANCELLED("Annulée");
 
     private final String libelle;
     

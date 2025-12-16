@@ -23,6 +23,8 @@ public class Notification extends BaseEntity {
 
     private NotificationTitre titre;
 
+    private boolean lu;
+
     private String message;
 
     private LocalDate date;

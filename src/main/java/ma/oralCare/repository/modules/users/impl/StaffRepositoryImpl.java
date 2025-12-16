@@ -23,15 +23,15 @@ public class StaffRepositoryImpl implements StaffRepository {
     private static final String SQL_UPDATE_UTILISATEUR = "UPDATE utilisateur SET nom=?, prenom=?, email=?, cin=?, tel=?, sexe=?, login=?, mot_de_pass=?, date_naissance=?, last_login_date=?, numero=?, rue=?, code_postal=?, ville=?, pays=?, complement=? WHERE id_entite=?";
     private static final String SQL_UPDATE_STAFF = "UPDATE Staff SET salaire=?, prime=?, date_recrutement=?, solde_conge=?, cabinet_id=? WHERE id_entite=?";
 
-    // Jointure pour le Staff
+    // Jointure pour le Staff - CORRECTION APPLIQUÉE ICI
     private static final String BASE_SELECT_STAFF_SQL = """
         SELECT s.salaire, s.prime, s.date_recrutement, s.solde_conge, s.cabinet_id,
                u.nom, u.prenom, u.email, u.cin, u.tel, u.sexe, u.login, u.mot_de_pass, u.date_naissance, u.last_login_date, u.numero, u.rue, u.code_postal, u.ville, u.pays, u.complement,
                b.id_entite, b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par
-        FROM Staffs
+        FROM Staff s
         JOIN utilisateur u ON s.id_entite = u.id_entite
         JOIN BaseEntity b ON u.id_entite = b.id_entite
-        """;
+        """; // FIN DE LA CORRECTION
 
     @Override
     public void create(Staff staff) {

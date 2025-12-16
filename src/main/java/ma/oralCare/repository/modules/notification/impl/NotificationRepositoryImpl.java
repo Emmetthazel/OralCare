@@ -281,4 +281,29 @@ public class NotificationRepositoryImpl implements NotificationRepository {
             throw new RuntimeException("Erreur lors du marquage de toutes les notifications comme lues.", e);
         }
     }
+
+    @Override
+    public boolean isNotificationReadByUser(Long notificationId, Long utilisateurId) {
+        String sql = "SELECT est_lu FROM notification_utilisateur WHERE notification_id = ? AND utilisateur_id = ?";
+
+        // CORRECTION : Remplacer 'getConnection()' par 'SessionFactory.getInstance().getConnection()'
+        try (Connection conn = SessionFactory.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, notificationId);
+            ps.setLong(2, utilisateurId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    // Retourne la valeur de la colonne est_lu
+                    return rs.getBoolean("est_lu");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification du statut de lecture: " + e.getMessage());
+            // En cas d'erreur ou si aucune ligne n'est trouvée (pas d'association), on considère qu'elle n'est pas lue
+            return false;
+        }
+        return false;
+    }
 }
