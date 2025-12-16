@@ -141,10 +141,10 @@ public class TestRepo {
                 utilisateurRepository.create(nouvelUtilisateur);
                 utilisateurTest = nouvelUtilisateur;
                 System.out.println(utilisateurTest.getIdEntite() != null ?
-                        "✅ [Utilisateur] CREATE OK. ID: " + utilisateurTest.getIdEntite() + ", Login: " + utilisateurTest.getLogin()
-                        : "❌ [Utilisateur] CREATE Échec (ID non généré).");
+                        "[Utilisateur] CREATE OK. ID: " + utilisateurTest.getIdEntite() + ", Login: " + utilisateurTest.getLogin()
+                        : "[Utilisateur] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Utilisateur] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Utilisateur] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 utilisateurTest = null;
             }
         }
@@ -155,14 +155,14 @@ public class TestRepo {
                 roleRepository.create(nouveauRole);
                 roleTest = nouveauRole;
                 System.out.println(roleTest.getIdEntite() != null ?
-                        "✅ [Role] CREATE OK. Libelle: " + roleTest.getLibelle()
-                        : "❌ [Role] CREATE Échec (ID non généré).");
+                        "[Role] CREATE OK. Libelle: " + roleTest.getLibelle()
+                        : "[Role] CREATE Échec (ID non généré).");
 
                 utilisateurRepository.addRoleToUtilisateur(utilisateurTest.getIdEntite(), roleTest.getIdEntite());
-                System.out.println("✅ [Role] Association ADD_ROLE OK.");
+                System.out.println("[Role] Association ADD_ROLE OK.");
 
             } catch (Exception e) {
-                System.err.println("❌ [Role] CREATE/Association Échec: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Role] CREATE/Association Échec: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 roleTest = null;
             }
         }
@@ -175,10 +175,10 @@ public class TestRepo {
                 adminRepository.create(nouvelAdmin);
                 adminTest = nouvelAdmin;
                 System.out.println(adminTest.getIdEntite() != null ?
-                        "✅ [Admin] CREATE OK. ID: " + adminTest.getIdEntite() + ", Login: " + adminTest.getLogin()
-                        : "❌ [Admin] CREATE Échec (ID non généré).");
+                        "[Admin] CREATE OK. ID: " + adminTest.getIdEntite() + ", Login: " + adminTest.getLogin()
+                        : "[Admin] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Admin] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Admin] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 adminTest = null;
             }
         }
@@ -191,14 +191,14 @@ public class TestRepo {
                 cabinetAInserer.setIdEntite(CABINET_ID_TEST);
                 cabinetRepository.create(cabinetAInserer);
                 cabinetTest = cabinetAInserer;
-                System.out.println("✅ [Cabinet] PRÉ-REQUIS OK. ID: " + cabinetTest.getIdEntite());
+                System.out.println("[Cabinet] PRÉ-REQUIS OK. ID: " + cabinetTest.getIdEntite());
             } catch (Exception e) {
-                System.err.println("❌ [Cabinet] PRÉ-REQUIS Échec critique (Cabinet ID " + CABINET_ID_TEST + "L): " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Cabinet] PRÉ-REQUIS Échec critique (Cabinet ID " + CABINET_ID_TEST + "L): " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 cabinetTest = null;
             }
         } else {
             cabinetTest = cabinetRepository.findById(CABINET_ID_TEST).get();
-            System.out.println("✅ [Cabinet] PRÉ-REQUIS OK. ID: " + cabinetTest.getIdEntite());
+            System.out.println("[Cabinet] PRÉ-REQUIS OK. ID: " + cabinetTest.getIdEntite());
         }
 
         // --- B. Insertion Staff (Dépend de Cabinet) ---
@@ -210,10 +210,10 @@ public class TestRepo {
                 staffRepository.create(nouveauStaff);
                 staffTest = nouveauStaff;
                 System.out.println(staffTest.getIdEntite() != null ?
-                        "✅ [Staff] CREATE OK. ID: " + staffTest.getIdEntite() + ", Nom: " + staffTest.getNom()
-                        : "❌ [Staff] CREATE Échec (ID non généré).");
+                        "[Staff] CREATE OK. ID: " + staffTest.getIdEntite() + ", Nom: " + staffTest.getNom()
+                        : "[Staff] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Staff] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Staff] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 staffTest = null;
             }
         }
@@ -227,10 +227,10 @@ public class TestRepo {
                 secretaireRepository.create(nouvelleSecretaire);
                 secretaireTest = nouvelleSecretaire;
                 System.out.println(secretaireTest.getIdEntite() != null ?
-                        "✅ [Secretaire] CREATE OK. ID: " + secretaireTest.getIdEntite() + ", CIN: " + secretaireTest.getCin()
-                        : "❌ [Secretaire] CREATE Échec (ID non généré).");
+                        "[Secretaire] CREATE OK. ID: " + secretaireTest.getIdEntite() + ", CIN: " + secretaireTest.getCin()
+                        : "[Secretaire] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Secretaire] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Secretaire] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 secretaireTest = null;
             }
         }
@@ -244,10 +244,10 @@ public class TestRepo {
                 medecinRepository.create(nouveauMedecin);
                 medecinTest = nouveauMedecin;
                 System.out.println(medecinTest.getIdEntite() != null ?
-                        "✅ [Medecin] CREATE OK. " + medecinTest.toString()
-                        : "❌ [Medecin] CREATE Échec (ID non généré).");
+                        "[Medecin] CREATE OK. " + medecinTest.toString()
+                        : "[Medecin] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Medecin] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Medecin] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 medecinTest = null;
             }
         }
@@ -259,10 +259,10 @@ public class TestRepo {
                 patientRepository.create(nouveauPatient);
                 patientTest = nouveauPatient;
                 System.out.println(patientTest.getIdEntite() != null ?
-                        "✅ [Patient] CREATE OK. " + patientTest.toString()
-                        : "❌ [Patient] CREATE Échec (ID non généré).");
+                        "[Patient] CREATE OK. " + patientTest.toString()
+                        : "[Patient] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Patient] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Patient] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 patientTest = null;
             }
         }
@@ -275,15 +275,15 @@ public class TestRepo {
                 antecedentRepository.create(nouvelAntecedent);
                 antecedentTest = nouvelAntecedent;
                 System.out.println(antecedentTest.getIdEntite() != null ?
-                        "✅ [Antecedent] CREATE OK. ID: " + antecedentTest.getIdEntite()
-                        : "❌ [Antecedent] CREATE Échec (ID non généré).");
+                        "[Antecedent] CREATE OK. ID: " + antecedentTest.getIdEntite()
+                        : "[Antecedent] CREATE Échec (ID non généré).");
 
                 // Association Many-to-Many
                 patientRepository.addAntecedentToPatient(patientTest.getIdEntite(), antecedentTest.getIdEntite());
-                System.out.println("✅ [Antecedent] Association ADD_ANTECEDENT OK.");
+                System.out.println("[Antecedent] Association ADD_ANTECEDENT OK.");
 
             } catch (Exception e) {
-                System.err.println("❌ [Antecedent] CREATE/Association Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Antecedent] CREATE/Association Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 antecedentTest = null;
             }
         }
@@ -296,10 +296,10 @@ public class TestRepo {
                 chargesRepository.create(nouvelleCharge);
                 chargesTest = nouvelleCharge;
                 System.out.println(chargesTest.getIdEntite() != null ?
-                        "✅ [Charges] CREATE OK. ID: " + chargesTest.getIdEntite() + ", Montant: " + chargesTest.getMontant()
-                        : "❌ [Charges] CREATE Échec (ID non généré).");
+                        "[Charges] CREATE OK. ID: " + chargesTest.getIdEntite() + ", Montant: " + chargesTest.getMontant()
+                        : "[Charges] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Charges] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Charges] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 chargesTest = null;
             }
         }
@@ -311,10 +311,10 @@ public class TestRepo {
                 dossierRepository.create(nouveauDossier);
                 dossierTest = nouveauDossier;
                 System.out.println(dossierTest.getIdEntite() != null ?
-                        "✅ [Dossier] CREATE OK. ID: " + dossierTest.getIdEntite()
-                        : "❌ [Dossier] CREATE Échec (ID non généré).");
+                        "[Dossier] CREATE OK. ID: " + dossierTest.getIdEntite()
+                        : "[Dossier] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Dossier] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Dossier] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 dossierTest = null;
             }
         }
@@ -326,10 +326,10 @@ public class TestRepo {
                 consultationRepository.create(nouvelleConsultation);
                 consultationTest = nouvelleConsultation;
                 System.out.println(consultationTest.getIdEntite() != null ?
-                        "✅ [Consultation] CREATE OK. ID: " + consultationTest.getIdEntite()
-                        : "❌ [Consultation] CREATE Échec (ID non généré).");
+                        "[Consultation] CREATE OK. ID: " + consultationTest.getIdEntite()
+                        : "[Consultation] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Consultation] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Consultation] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 consultationTest = null;
             }
         }
@@ -341,10 +341,10 @@ public class TestRepo {
                 certificatRepository.create(nouveauCertificat);
                 certificatTest = nouveauCertificat;
                 System.out.println(certificatTest.getIdEntite() != null ?
-                        "✅ [Certificat] CREATE OK. ID: " + certificatTest.getIdEntite()
-                        : "❌ [Certificat] CREATE Échec (ID non généré).");
+                        "[Certificat] CREATE OK. ID: " + certificatTest.getIdEntite()
+                        : "[Certificat] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Certificat] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Certificat] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 certificatTest = null;
             }
         }
@@ -357,10 +357,10 @@ public class TestRepo {
                 agendaRepository.create(nouvelAgenda);
                 agendaTest = nouvelAgenda;
                 System.out.println(agendaTest.getIdEntite() != null ?
-                        "✅ [Agenda] CREATE OK. " + nouvelAgenda.toString()
-                        : "❌ [Agenda] CREATE Échec (ID non généré).");
+                        "[Agenda] CREATE OK. " + nouvelAgenda.toString()
+                        : "[Agenda] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Agenda] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Agenda] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 agendaTest = null;
             }
         }
@@ -372,10 +372,10 @@ public class TestRepo {
                 acteRepository.create(nouvelActe);
                 acteTest = nouvelActe;
                 System.out.println(acteTest.getIdEntite() != null ?
-                        "✅ [Acte] CREATE OK. " + nouvelActe.toString()
-                        : "❌ [Acte] CREATE Échec (ID non généré).");
+                        "[Acte] CREATE OK. " + nouvelActe.toString()
+                        : "[Acte] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Acte] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Acte] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 acteTest = null;
             }
         }
@@ -389,10 +389,10 @@ public class TestRepo {
                 notificationRepository.create(nouvelleNotification);
                 notificationTest = nouvelleNotification;
                 System.out.println(notificationTest.getIdEntite() != null ?
-                        "✅ [Notification] CREATE OK. Titre: " + notificationTest.getTitre()
-                        : "❌ [Notification] CREATE Échec (ID non généré).");
+                        "[Notification] CREATE OK. Titre: " + notificationTest.getTitre()
+                        : "[Notification] CREATE Échec (ID non généré).");
             } catch (Exception e) {
-                System.err.println("❌ [Notification] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[Notification] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 notificationTest = null;
             }
         }
@@ -408,13 +408,13 @@ public class TestRepo {
                     rdvRepository.create(nouveauRdv);
                     rdvTest = nouveauRdv;
                     System.out.println(rdvTest.getIdEntite() != null ?
-                            "✅ [RDV] CREATE OK. ID: " + rdvTest.getIdEntite() + ", Date: " + rdvTest.getDate()
-                            : "❌ [RDV] CREATE Échec (ID non généré).");
+                            "[RDV] CREATE OK. ID: " + rdvTest.getIdEntite() + ", Date: " + rdvTest.getDate()
+                            : "[RDV] CREATE Échec (ID non généré).");
                 } else {
-                    System.err.println("❌ [RDV] CREATE Échec. Le créneau était déjà réservé.");
+                    System.err.println("[RDV] CREATE Échec. Le créneau était déjà réservé.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [RDV] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                System.err.println("[RDV] CREATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 rdvTest = null;
             }
         }
@@ -433,9 +433,9 @@ public class TestRepo {
         if (utilisateurTest != null) {
             Utilisateur foundUser = utilisateurRepository.findById(utilisateurTest.getIdEntite()).orElse(null);
             if (foundUser != null && foundUser.getLogin().equals(utilisateurTest.getLogin())) {
-                System.out.println("✅ [Utilisateur] READ OK. Login: " + foundUser.getLogin());
+                System.out.println("[Utilisateur] READ OK. Login: " + foundUser.getLogin());
             } else {
-                System.err.println("❌ [Utilisateur] READ Échec.");
+                System.err.println("[Utilisateur] READ Échec.");
             }
         }
 
@@ -443,9 +443,9 @@ public class TestRepo {
         if (roleTest != null) {
             Role foundRole = roleRepository.findById(roleTest.getIdEntite()).orElse(null);
             if (foundRole != null && foundRole.getLibelle().equals(roleTest.getLibelle())) {
-                System.out.println("✅ [Role] READ OK. Libelle: " + foundRole.getLibelle());
+                System.out.println("[Role] READ OK. Libelle: " + foundRole.getLibelle());
             } else {
-                System.err.println("❌ [Role] READ Échec.");
+                System.err.println("[Role] READ Échec.");
             }
         }
 
@@ -455,18 +455,18 @@ public class TestRepo {
 
             // Test 1: findById
             if (foundAdminOpt.isPresent() && foundAdminOpt.get().getLogin().equals(adminTest.getLogin())) {
-                System.out.println("✅ [Admin] READ OK (findById). Login: " + foundAdminOpt.get().getLogin());
+                System.out.println("[Admin] READ OK (findById). Login: " + foundAdminOpt.get().getLogin());
             } else {
-                System.err.println("❌ [Admin] READ Échec (findById).");
+                System.err.println("[Admin] READ Échec (findById).");
             }
 
             // Test 2: findByNomContaining
             String nomPartiel = adminTest.getNom().substring(0, Math.min(adminTest.getNom().length(), 3));
             List<Admin> adminByNom = adminRepository.findAllByNomContaining(nomPartiel);
             if (adminByNom != null && adminByNom.size() >= 1) {
-                System.out.println("✅ [Admin] READ OK (findAllByNomContaining). Count: " + adminByNom.size());
+                System.out.println("[Admin] READ OK (findAllByNomContaining). Count: " + adminByNom.size());
             } else {
-                System.err.println("❌ [Admin] READ Échec (findAllByNomContaining).");
+                System.err.println("[Admin] READ Échec (findAllByNomContaining).");
             }
         }
 
@@ -475,43 +475,43 @@ public class TestRepo {
             // 1. READ by ID
             Optional<Secretaire> foundSecretaireOpt = secretaireRepository.findById(secretaireTest.getIdEntite());
             if (foundSecretaireOpt.isPresent() && foundSecretaireOpt.get().getLogin().equals(secretaireTest.getLogin())) {
-                System.out.println("✅ [Secretaire] READ OK (findById). Login: " + foundSecretaireOpt.get().getLogin());
+                System.out.println("[Secretaire] READ OK (findById). Login: " + foundSecretaireOpt.get().getLogin());
             } else {
-                System.err.println("❌ [Secretaire] READ Échec (findById).");
+                System.err.println("[Secretaire] READ Échec (findById).");
             }
 
             // 2. Test findByLogin
             Optional<Secretaire> foundSecretaireByLoginOpt = secretaireRepository.findByLogin(secretaireTest.getLogin());
             if (foundSecretaireByLoginOpt.isPresent()) {
-                System.out.println("✅ [Secretaire] READ OK (findByLogin).");
+                System.out.println("[Secretaire] READ OK (findByLogin).");
             } else {
-                System.err.println("❌ [Secretaire] READ Échec (findByLogin).");
+                System.err.println("[Secretaire] READ Échec (findByLogin).");
             }
 
             // 3. Test findByCin
             Optional<Secretaire> foundSecretaireByCinOpt = secretaireRepository.findByCin(secretaireTest.getCin());
             if (foundSecretaireByCinOpt.isPresent()) {
-                System.out.println("✅ [Secretaire] READ OK (findByCin).");
+                System.out.println("[Secretaire] READ OK (findByCin).");
             } else {
-                System.err.println("❌ [Secretaire] READ Échec (findByCin).");
+                System.err.println("[Secretaire] READ Échec (findByCin).");
             }
 
             // 4. Test findAllByNomContaining
             String nomPartiel = secretaireTest.getNom().substring(0, Math.min(secretaireTest.getNom().length(), 3));
             List<Secretaire> secretaireByNom = secretaireRepository.findAllByNomContaining(nomPartiel);
             if (secretaireByNom != null && secretaireByNom.size() >= 1) {
-                System.out.println("✅ [Secretaire] READ OK (findAllByNomContaining). Count: " + secretaireByNom.size());
+                System.out.println("[Secretaire] READ OK (findAllByNomContaining). Count: " + secretaireByNom.size());
             } else {
-                System.err.println("❌ [Secretaire] READ Échec (findAllByNomContaining).");
+                System.err.println("[Secretaire] READ Échec (findAllByNomContaining).");
             }
 
             // 5. Test findAllByCabinetId
             if (cabinetTest != null) {
                 List<Secretaire> secretaireByCabinet = secretaireRepository.findAllByCabinetId(cabinetTest.getIdEntite());
                 if (secretaireByCabinet != null && secretaireByCabinet.size() >= 1) {
-                    System.out.println("✅ [Secretaire] READ OK (findAllByCabinetId). Count: " + secretaireByCabinet.size());
+                    System.out.println("[Secretaire] READ OK (findAllByCabinetId). Count: " + secretaireByCabinet.size());
                 } else {
-                    System.err.println("❌ [Secretaire] READ Échec (findAllByCabinetId). Count: " + (secretaireByCabinet != null ? secretaireByCabinet.size() : "null"));
+                    System.err.println("[Secretaire] READ Échec (findAllByCabinetId). Count: " + (secretaireByCabinet != null ? secretaireByCabinet.size() : "null"));
                 }
             }
         }
@@ -521,9 +521,9 @@ public class TestRepo {
         if (cabinetTest != null) {
             CabinetMedicale foundCabinet = cabinetRepository.findById(cabinetTest.getIdEntite()).orElse(null);
             if (foundCabinet != null && foundCabinet.getNom().equals(cabinetTest.getNom())) {
-                System.out.println("✅ [Cabinet] READ OK. Nom: " + foundCabinet.getNom());
+                System.out.println("[Cabinet] READ OK. Nom: " + foundCabinet.getNom());
             } else {
-                System.err.println("❌ [Cabinet] READ Échec.");
+                System.err.println("[Cabinet] READ Échec.");
             }
         }
 
@@ -531,15 +531,15 @@ public class TestRepo {
         if (staffTest != null) {
             Staff foundStaff = staffRepository.findById(staffTest.getIdEntite()).orElse(null);
             if (foundStaff != null && staffTest.getLogin().equals(foundStaff.getLogin())) {
-                System.out.println("✅ [Staff] READ OK (findById). Login: " + foundStaff.getLogin());
+                System.out.println("[Staff] READ OK (findById). Login: " + foundStaff.getLogin());
             } else {
-                System.err.println("❌ [Staff] READ Échec (findById).");
+                System.err.println("[Staff] READ Échec (findById).");
             }
             Optional<Staff> foundStaffByLogin = staffRepository.findByLogin(staffTest.getLogin());
             if (foundStaffByLogin.isPresent()) {
-                System.out.println("✅ [Staff] READ OK (findByLogin).");
+                System.out.println("[Staff] READ OK (findByLogin).");
             } else {
-                System.err.println("❌ [Staff] READ Échec (findByLogin).");
+                System.err.println("[Staff] READ Échec (findByLogin).");
             }
         }
 
@@ -547,9 +547,9 @@ public class TestRepo {
         if (medecinTest != null) {
             Medecin foundMedecin = medecinRepository.findById(medecinTest.getIdEntite()).orElse(null);
             if (foundMedecin != null && foundMedecin.getNom().equals(medecinTest.getNom())) {
-                System.out.println("✅ [Medecin] READ OK. " + foundMedecin.toString());
+                System.out.println("[Medecin] READ OK. " + foundMedecin.toString());
             } else {
-                System.err.println("❌ [Medecin] READ Échec.");
+                System.err.println("[Medecin] READ Échec.");
             }
         }
 
@@ -557,9 +557,9 @@ public class TestRepo {
         if (patientTest != null) {
             Patient foundPatient = patientRepository.findById(patientTest.getIdEntite()).orElse(null);
             if (foundPatient != null && foundPatient.getNom().equals(patientTest.getNom())) {
-                System.out.println("✅ [Patient] READ OK. " + foundPatient.toString());
+                System.out.println("[Patient] READ OK. " + foundPatient.toString());
             } else {
-                System.err.println("❌ [Patient] READ Échec.");
+                System.err.println("[Patient] READ Échec.");
             }
         }
 
@@ -567,16 +567,16 @@ public class TestRepo {
         if (antecedentTest != null) {
             Optional<Antecedent> foundAntecedentOpt = antecedentRepository.findById(antecedentTest.getIdEntite());
             if (foundAntecedentOpt.isPresent() && foundAntecedentOpt.get().getNom().equals(antecedentTest.getNom())) {
-                System.out.println("✅ [Antecedent] READ OK (findById). Nom: " + foundAntecedentOpt.get().getNom());
+                System.out.println("[Antecedent] READ OK (findById). Nom: " + foundAntecedentOpt.get().getNom());
             } else {
-                System.err.println("❌ [Antecedent] READ Échec (findById).");
+                System.err.println("[Antecedent] READ Échec (findById).");
             }
 
             List<Antecedent> foundByCat = antecedentRepository.findByCategorie(antecedentTest.getCategorie());
             if (!foundByCat.isEmpty()) {
-                System.out.println("✅ [Antecedent] READ OK (findByCategorie).");
+                System.out.println("[Antecedent] READ OK (findByCategorie).");
             } else {
-                System.err.println("❌ [Antecedent] READ Échec (findByCategorie).");
+                System.err.println("[Antecedent] READ Échec (findByCategorie).");
             }
 
             // [CORRECTION] : Vérification du lien Many-to-Many
@@ -586,13 +586,13 @@ public class TestRepo {
 
                     // On vérifie que la liste n'est pas vide et qu'elle contient bien l'antécédent inséré
                     if (!foundByPatient.isEmpty() && foundByPatient.stream().anyMatch(a -> a.getIdEntite().equals(antecedentTest.getIdEntite()))) {
-                        System.out.println("✅ [Antecedent] READ OK (findByPatientId - Lien OK).");
+                        System.out.println("[Antecedent] READ OK (findByPatientId - Lien OK).");
                     } else {
                         // C'est ici que l'erreur se produit si l'Antécédent n'est pas vu
-                        System.err.println("❌ [Antecedent] READ Échec (findByPatientId - Lien ÉCHEC). Count trouvé: " + foundByPatient.size());
+                        System.err.println("[Antecedent] READ Échec (findByPatientId - Lien ÉCHEC). Count trouvé: " + foundByPatient.size());
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Antecedent] READ Échec critique (findByPatientId): " + e.getMessage());
+                    System.err.println("[Antecedent] READ Échec critique (findByPatientId): " + e.getMessage());
                 }
             }
         }
@@ -601,9 +601,9 @@ public class TestRepo {
         if (dossierTest != null) {
             DossierMedicale foundDossier = dossierRepository.findById(dossierTest.getIdEntite()).orElse(null);
             if (foundDossier != null) {
-                System.out.println("✅ [Dossier] READ OK. ID: " + foundDossier.getIdEntite());
+                System.out.println("[Dossier] READ OK. ID: " + foundDossier.getIdEntite());
             } else {
-                System.err.println("❌ [Dossier] READ Échec.");
+                System.err.println("[Dossier] READ Échec.");
             }
         }
 
@@ -611,9 +611,9 @@ public class TestRepo {
         if (consultationTest != null) {
             Consultation foundConsultation = consultationRepository.findById(consultationTest.getIdEntite()).orElse(null);
             if (foundConsultation != null) {
-                System.out.println("✅ [Consultation] READ OK. ID: " + foundConsultation.getIdEntite());
+                System.out.println("[Consultation] READ OK. ID: " + foundConsultation.getIdEntite());
             } else {
-                System.err.println("❌ [Consultation] READ Échec.");
+                System.err.println("[Consultation] READ Échec.");
             }
         }
 
@@ -621,9 +621,9 @@ public class TestRepo {
         if (agendaTest != null) {
             AgendaMensuel foundAgenda = agendaRepository.findById(agendaTest.getIdEntite()).orElse(null);
             if (foundAgenda != null && foundAgenda.getMois().equals(agendaTest.getMois())) {
-                System.out.println("✅ [Agenda] READ OK. " + foundAgenda.toString());
+                System.out.println("[Agenda] READ OK. " + foundAgenda.toString());
             } else {
-                System.err.println("❌ [Agenda] READ Échec.");
+                System.err.println("[Agenda] READ Échec.");
             }
         }
 
@@ -631,9 +631,9 @@ public class TestRepo {
         if (acteTest != null) {
             Acte foundActe = acteRepository.findById(acteTest.getIdEntite()).orElse(null);
             if (foundActe != null && acteTest.getLibelle().equals(foundActe.getLibelle())) {
-                System.out.println("✅ [Acte] READ OK. " + foundActe.toString());
+                System.out.println("[Acte] READ OK. " + foundActe.toString());
             } else {
-                System.err.println("❌ [Acte] READ Échec.");
+                System.err.println("[Acte] READ Échec.");
             }
         }
 
@@ -643,35 +643,35 @@ public class TestRepo {
             List<Notification> notifsByUser = notificationRepository.findByUtilisateurId(medecinTest.getIdEntite());
 
             if (foundNotif.isPresent() && notifsByUser.stream().anyMatch(n -> n.getIdEntite().equals(notificationTest.getIdEntite()))) {
-                System.out.println("✅ [Notification] READ OK (findById et findByUtilisateurId). Titre: " + foundNotif.get().getTitre());
+                System.out.println("[Notification] READ OK (findById et findByUtilisateurId). Titre: " + foundNotif.get().getTitre());
             } else {
-                System.err.println("❌ [Notification] READ Échec.");
+                System.err.println("[Notification] READ Échec.");
             }
         }
         if (certificatTest != null && dossierTest != null) {
             // 1. Test findById (READ C de CRUD)
             Optional<Certificat> foundCertificatOpt = certificatRepository.findById(certificatTest.getIdEntite());
             if (foundCertificatOpt.isPresent() && foundCertificatOpt.get().getDuree() == certificatTest.getDuree()) {
-                System.out.println("✅ [Certificat] READ OK (findById). Durée: " + foundCertificatOpt.get().getDuree());
+                System.out.println("[Certificat] READ OK (findById). Durée: " + foundCertificatOpt.get().getDuree());
             } else {
-                System.err.println("❌ [Certificat] READ Échec (findById).");
+                System.err.println("[Certificat] READ Échec (findById).");
             }
 
             // 2. Test findByDossierMedicaleId (Recherche Spécifique via JOIN)
             List<Certificat> foundByDossier = certificatRepository.findByDossierMedicaleId(dossierTest.getIdEntite());
             if (!foundByDossier.isEmpty() && foundByDossier.get(0).getIdEntite().equals(certificatTest.getIdEntite())) {
-                System.out.println("✅ [Certificat] READ OK (findByDossierMedicaleId). Count: " + foundByDossier.size());
+                System.out.println("[Certificat] READ OK (findByDossierMedicaleId). Count: " + foundByDossier.size());
             } else {
-                System.err.println("❌ [Certificat] READ Échec (findByDossierMedicaleId).");
+                System.err.println("[Certificat] READ Échec (findByDossierMedicaleId).");
             }
 
             // 3. Test findValidCertificates (Recherche Spécifique par Date)
             // Le certificat créé est valide si sa date_fin est future. On vérifie avec la date d'hier.
             List<Certificat> foundValid = certificatRepository.findValidCertificates(LocalDate.now().minusDays(1));
             if (!foundValid.isEmpty() && foundValid.stream().anyMatch(c -> c.getIdEntite().equals(certificatTest.getIdEntite()))) {
-                System.out.println("✅ [Certificat] READ OK (findValidCertificates).");
+                System.out.println("[Certificat] READ OK (findValidCertificates).");
             } else {
-                System.err.println("❌ [Certificat] READ Échec (findValidCertificates).");
+                System.err.println("[Certificat] READ Échec (findValidCertificates).");
             }
         }
         // --- Selection RDV (READ) ---
@@ -680,35 +680,35 @@ public class TestRepo {
 
             // Test 1: findById
             if (foundRdvOpt.isPresent() && foundRdvOpt.get().getMotif().equals(rdvTest.getMotif())) {
-                System.out.println("✅ [RDV] READ OK (findById). Motif: " + foundRdvOpt.get().getMotif());
+                System.out.println("[RDV] READ OK (findById). Motif: " + foundRdvOpt.get().getMotif());
             } else {
-                System.err.println("❌ [RDV] READ Échec (findById).");
+                System.err.println("[RDV] READ Échec (findById).");
             }
 
             // Test 2: findByDossierMedicaleId
             if (dossierTest != null) {
                 List<RDV> rdvByDossier = rdvRepository.findByDossierMedicaleId(dossierTest.getIdEntite());
                 if (!rdvByDossier.isEmpty() && rdvByDossier.get(0).getIdEntite().equals(rdvTest.getIdEntite())) {
-                    System.out.println("✅ [RDV] READ OK (findByDossierMedicaleId). Count: " + rdvByDossier.size());
+                    System.out.println("[RDV] READ OK (findByDossierMedicaleId). Count: " + rdvByDossier.size());
                 } else {
-                    System.err.println("❌ [RDV] READ Échec (findByDossierMedicaleId).");
+                    System.err.println("[RDV] READ Échec (findByDossierMedicaleId).");
                 }
             }
 
             // Test 3: findByDate
             List<RDV> rdvByDate = rdvRepository.findByDate(rdvTest.getDate());
             if (!rdvByDate.isEmpty()) {
-                System.out.println("✅ [RDV] READ OK (findByDate). Count: " + rdvByDate.size());
+                System.out.println("[RDV] READ OK (findByDate). Count: " + rdvByDate.size());
             } else {
-                System.err.println("❌ [RDV] READ Échec (findByDate).");
+                System.err.println("[RDV] READ Échec (findByDate).");
             }
 
             // Test 4: findByStatut
             List<RDV> rdvByStatut = rdvRepository.findByStatut(StatutRDV.PENDING);
             if (!rdvByStatut.isEmpty()) {
-                System.out.println("✅ [RDV] READ OK (findByStatut). Count: " + rdvByStatut.size());
+                System.out.println("[RDV] READ OK (findByStatut). Count: " + rdvByStatut.size());
             } else {
-                System.err.println("❌ [RDV] READ Échec (findByStatut).");
+                System.err.println("[RDV] READ Échec (findByStatut).");
             }
         }
         // ... (Après la sélection Staff/Secretaire)
@@ -719,17 +719,17 @@ public class TestRepo {
             // 1. Test findById (READ C de CRUD)
             Optional<Charges> foundChargesOpt = chargesRepository.findById(chargesTest.getIdEntite());
             if (foundChargesOpt.isPresent() && foundChargesOpt.get().getTitre().equals(chargesTest.getTitre())) {
-                System.out.println("✅ [Charges] READ OK (findById). Titre: " + foundChargesOpt.get().getTitre());
+                System.out.println("[Charges] READ OK (findById). Titre: " + foundChargesOpt.get().getTitre());
             } else {
-                System.err.println("❌ [Charges] READ Échec (findById).");
+                System.err.println("[Charges] READ Échec (findById).");
             }
 
             // 2. Test findByCabinetMedicaleId
             List<Charges> foundByCabinet = chargesRepository.findByCabinetMedicaleId(cabinetTest.getIdEntite());
             if (!foundByCabinet.isEmpty() && foundByCabinet.stream().anyMatch(c -> c.getIdEntite().equals(chargesTest.getIdEntite()))) {
-                System.out.println("✅ [Charges] READ OK (findByCabinetMedicaleId). Count: " + foundByCabinet.size());
+                System.out.println("[Charges] READ OK (findByCabinetMedicaleId). Count: " + foundByCabinet.size());
             } else {
-                System.err.println("❌ [Charges] READ Échec (findByCabinetMedicaleId).");
+                System.err.println("[Charges] READ Échec (findByCabinetMedicaleId).");
             }
 
             // 3. Test findByDateBetween (On utilise une période qui contient la date de la charge)
@@ -737,25 +737,25 @@ public class TestRepo {
             LocalDateTime dateFin = chargesTest.getDate().plusDays(1);
             List<Charges> foundByDateRange = chargesRepository.findByDateBetween(dateDebut, dateFin);
             if (!foundByDateRange.isEmpty() && foundByDateRange.stream().anyMatch(c -> c.getIdEntite().equals(chargesTest.getIdEntite()))) {
-                System.out.println("✅ [Charges] READ OK (findByDateBetween). Count: " + foundByDateRange.size());
+                System.out.println("[Charges] READ OK (findByDateBetween). Count: " + foundByDateRange.size());
             } else {
-                System.err.println("❌ [Charges] READ Échec (findByDateBetween).");
+                System.err.println("[Charges] READ Échec (findByDateBetween).");
             }
 
             // 4. Test calculateTotalChargesByDateBetween
             Double totalCharges = chargesRepository.calculateTotalChargesByDateBetween(dateDebut, dateFin);
             if (totalCharges > 0.0) {
-                System.out.println("✅ [Charges] READ OK (calculateTotalChargesByDateBetween). Total: " + totalCharges);
+                System.out.println("[Charges] READ OK (calculateTotalChargesByDateBetween). Total: " + totalCharges);
             } else {
-                System.err.println("❌ [Charges] READ Échec (calculateTotalChargesByDateBetween). Total: " + totalCharges);
+                System.err.println("[Charges] READ Échec (calculateTotalChargesByDateBetween). Total: " + totalCharges);
             }
 
             String keyword = chargesTest.getTitre().substring(0, 5);
             List<Charges> foundByKeyword = chargesRepository.findByTitreOrDescriptionContaining(keyword);
             if (!foundByKeyword.isEmpty() && foundByKeyword.stream().anyMatch(c -> c.getIdEntite().equals(chargesTest.getIdEntite()))) {
-                System.out.println("✅ [Charges] READ OK (findByTitreOrDescriptionContaining). Count: " + foundByKeyword.size());
+                System.out.println("[Charges] READ OK (findByTitreOrDescriptionContaining). Count: " + foundByKeyword.size());
             } else {
-                System.err.println("❌ [Charges] READ Échec (findByTitreOrDescriptionContaining).");
+                System.err.println("[Charges] READ Échec (findByTitreOrDescriptionContaining).");
             }
         }
     }
@@ -778,12 +778,12 @@ public class TestRepo {
                     secretaireRepository.update(s);
                     Secretaire updatedS = secretaireRepository.findById(s.getIdEntite()).orElse(null);
                     if (updatedS != null && "Test Updated".equals(updatedS.getPrenom()) && MODIFICATEUR_ID.equals(updatedS.getModifiePar())) {
-                        System.out.println("✅ [Secretaire] UPDATE OK. Nouveau Prenom: " + updatedS.getPrenom());
+                        System.out.println("[Secretaire] UPDATE OK. Nouveau Prenom: " + updatedS.getPrenom());
                     } else {
-                        System.err.println("❌ [Secretaire] UPDATE Échec.");
+                        System.err.println("[Secretaire] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Secretaire] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Secretaire] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -798,12 +798,12 @@ public class TestRepo {
                     utilisateurRepository.update(u);
                     Utilisateur updatedU = utilisateurRepository.findById(u.getIdEntite()).orElse(null);
                     if (updatedU != null && "Test Updated".equals(updatedU.getPrenom())) {
-                        System.out.println("✅ [Utilisateur] UPDATE OK. Nouveau Prenom: " + updatedU.getPrenom());
+                        System.out.println("[Utilisateur] UPDATE OK. Nouveau Prenom: " + updatedU.getPrenom());
                     } else {
-                        System.err.println("❌ [Utilisateur] UPDATE Échec.");
+                        System.err.println("[Utilisateur] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Utilisateur] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Utilisateur] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -819,12 +819,12 @@ public class TestRepo {
                     adminRepository.update(a);
                     Admin updatedA = adminRepository.findById(a.getIdEntite()).orElse(null);
                     if (updatedA != null && newTel.equals(updatedA.getTel())) {
-                        System.out.println("✅ [Admin] UPDATE OK. Nouveau Tel: " + updatedA.getTel());
+                        System.out.println("[Admin] UPDATE OK. Nouveau Tel: " + updatedA.getTel());
                     } else {
-                        System.err.println("❌ [Admin] UPDATE Échec.");
+                        System.err.println("[Admin] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Admin] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Admin] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -839,12 +839,12 @@ public class TestRepo {
                     cabinetRepository.update(c);
                     CabinetMedicale updatedC = cabinetRepository.findById(c.getIdEntite()).orElse(null);
                     if (updatedC != null && newEmail.equals(updatedC.getEmail())) {
-                        System.out.println("✅ [Cabinet] UPDATE OK. Nouveau Email: " + updatedC.getEmail());
+                        System.out.println("[Cabinet] UPDATE OK. Nouveau Email: " + updatedC.getEmail());
                     } else {
-                        System.err.println("❌ [Cabinet] UPDATE Échec.");
+                        System.err.println("[Cabinet] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Cabinet] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Cabinet] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -858,12 +858,12 @@ public class TestRepo {
                     antecedentRepository.update(a);
                     Antecedent updatedA = antecedentRepository.findById(a.getIdEntite()).orElse(null);
                     if (updatedA != null && newName.equals(updatedA.getNom())) {
-                        System.out.println("✅ [Antecedent] UPDATE OK. Nouveau Nom: " + updatedA.getNom());
+                        System.out.println("[Antecedent] UPDATE OK. Nouveau Nom: " + updatedA.getNom());
                     } else {
-                        System.err.println("❌ [Antecedent] UPDATE Échec.");
+                        System.err.println("[Antecedent] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Antecedent] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Antecedent] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -879,12 +879,12 @@ public class TestRepo {
                     patientRepository.update(p);
                     Patient updatedP = patientRepository.findById(p.getIdEntite()).orElse(null);
                     if (updatedP != null && newTel.equals(updatedP.getTelephone())) {
-                        System.out.println("✅ [Patient] UPDATE OK. Nouveau Tel: " + updatedP.getTelephone());
+                        System.out.println("[Patient] UPDATE OK. Nouveau Tel: " + updatedP.getTelephone());
                     } else {
-                        System.err.println("❌ [Patient] UPDATE Échec.");
+                        System.err.println("[Patient] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Patient] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Patient] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
@@ -904,12 +904,12 @@ public class TestRepo {
                 Optional<Certificat> updatedOpt = certificatRepository.findById(certificatTest.getIdEntite());
 
                 if (updatedOpt.isPresent() && updatedOpt.get().getDuree() == NOUVELLE_DUREE && updatedOpt.get().getNoteMedecin().equals(NOUVELLE_NOTE)) {
-                    System.out.println("✅ [Certificat] UPDATE OK. Nouvelle Durée/Note: " + updatedOpt.get().getDuree());
+                    System.out.println("[Certificat] UPDATE OK. Nouvelle Durée/Note: " + updatedOpt.get().getDuree());
                 } else {
-                    System.err.println("❌ [Certificat] UPDATE Échec.");
+                    System.err.println("[Certificat] UPDATE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Certificat] UPDATE Échec critique: " + e.getMessage());
+                System.err.println("[Certificat] UPDATE Échec critique: " + e.getMessage());
             }
         }
         if (consultationTest != null) {
@@ -922,12 +922,12 @@ public class TestRepo {
                 Optional<Consultation> updatedOpt = consultationRepository.findById(consultationTest.getIdEntite());
 
                 if (updatedOpt.isPresent() && updatedOpt.get().getStatut() == StatutConsultation.COMPLETED) {
-                    System.out.println("✅ [Consultation] UPDATE OK. Statut: COMPLETED");
+                    System.out.println("[Consultation] UPDATE OK. Statut: COMPLETED");
                 } else {
-                    System.err.println("❌ [Consultation] UPDATE Échec.");
+                    System.err.println("[Consultation] UPDATE Échec.");
                 }
             } catch (Exception e) {
-                System.err.println("❌ [Consultation] UPDATE Échec critique: " + e.getMessage());
+                System.err.println("[Consultation] UPDATE Échec critique: " + e.getMessage());
             }
         }
 
@@ -941,12 +941,12 @@ public class TestRepo {
                     dossierRepository.update(d);
                     DossierMedicale updatedD = dossierRepository.findById(d.getIdEntite()).orElse(null);
                     if (updatedD != null && MODIFICATEUR_ID.equals(updatedD.getModifiePar())) {
-                        System.out.println("✅ [Dossier] UPDATE OK. Modification des métadonnées réussie. Modifié par: " + updatedD.getModifiePar());
+                        System.out.println("[Dossier] UPDATE OK. Modification des métadonnées réussie. Modifié par: " + updatedD.getModifiePar());
                     } else {
-                        System.err.println("❌ [Dossier] UPDATE Échec.");
+                        System.err.println("[Dossier] UPDATE Échec.");
                     }
                 } catch (Exception e) {
-                    System.err.println("❌ [Dossier] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                    System.err.println("[Dossier] UPDATE Échec critique: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
                 }
             }
         }
