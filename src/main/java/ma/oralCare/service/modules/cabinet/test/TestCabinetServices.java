@@ -38,9 +38,9 @@ public class TestCabinetServices {
 
         if (existant.isEmpty()) {
             cabinet = dbUtils.createCabinetObject();
-            cabinet.setIdEntite(cabinetId);
+            //cabinet.setIdEntite(cabinetId);
             cabinetService.saveCabinet(cabinet);
-            System.out.println("✅ Cabinet créé via service. ID = " + cabinet.getIdEntite());
+            System.out.println("Cabinet créé via service. ID = " + cabinet.getIdEntite());
         } else {
             cabinet = existant.get();
             System.out.println("ℹ Cabinet déjà présent. ID = " + cabinet.getIdEntite());
@@ -50,8 +50,8 @@ public class TestCabinetServices {
         Charges charge = dbUtils.createChargesObject(cabinet);
         cabinetService.createCharge(charge);
         System.out.println(charge.getIdEntite() != null
-                ? "✅ Charge créée via service. ID = " + charge.getIdEntite()
-                : "❌ Échec création Charge via service");
+                ? "Charge créée via service. ID = " + charge.getIdEntite()
+                : "Échec création Charge via service");
 
         // 3. Lire les charges par cabinet et sur une période
         List<Charges> chargesByCabinet = cabinetService.getChargesByCabinet(cabinet.getIdEntite());

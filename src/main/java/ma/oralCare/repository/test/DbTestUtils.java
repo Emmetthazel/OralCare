@@ -478,6 +478,7 @@ public class DbTestUtils {
                 .montant(new BigDecimal("15000.00"))
                 .date(LocalDateTime.now().minusDays(3)) // Date d'aujourd'hui moins 3 jours
                 .cabinetMedicale(cabinet) // <-- CORRECTION : Utilisation de l'objet cabinet passé en paramètre
+                //.cabinetMedicale(null)
                 .build();
     }
 

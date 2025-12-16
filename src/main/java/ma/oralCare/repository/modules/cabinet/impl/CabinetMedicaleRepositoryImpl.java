@@ -51,7 +51,12 @@ public class CabinetMedicaleRepositoryImpl implements CabinetMedicaleRepository 
             // 1. BaseEntity
             try (PreparedStatement psBase = c.prepareStatement(SQL_INSERT_BASE, Statement.RETURN_GENERATED_KEYS)) {
                 psBase.setTimestamp(1, Timestamp.valueOf(now));
-                psBase.setLong(2, cabinet.getCreePar());
+                Long creePar = cabinet.getCreePar();
+                if (creePar != null) {
+                    psBase.setLong(2, creePar);
+                } else {
+                    psBase.setNull(2, java.sql.Types.BIGINT);
+                }
                 psBase.executeUpdate();
                 try (ResultSet keys = psBase.getGeneratedKeys()) {
                     if (keys.next()) baseId = keys.getLong(1);
@@ -110,7 +115,14 @@ public class CabinetMedicaleRepositoryImpl implements CabinetMedicaleRepository 
             // 1. BaseEntity (Mise à jour) : OK, ne nécessite pas de changement
             try (PreparedStatement psBase = c.prepareStatement(SQL_UPDATE_BASE)) {
                 psBase.setTimestamp(1, Timestamp.valueOf(now));
-                psBase.setLong(2, cabinet.getModifiePar());
+                Long modifiePar = cabinet.getModifiePar();
+                if (modifiePar != null) {
+                    psBase.setLong(2, modifiePar);
+                } else {
+                    // Si modifiePar est null, nous devons utiliser setNull.
+                    // Types.BIGINT est généralement utilisé pour les colonnes Long/ID.
+                    psBase.setNull(2, java.sql.Types.BIGINT);
+                }
                 psBase.setLong(3, cabinet.getIdEntite());
                 psBase.executeUpdate();
                 cabinet.setDateDerniereModification(now);
