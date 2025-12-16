@@ -5,6 +5,7 @@ import ma.oralCare.entities.enums.Sexe;
 
 public record CreateAdminRequest(
         String nom,
+        String prenom,
         String email,
         String adresse,
         String cin,
@@ -17,5 +18,7 @@ public record CreateAdminRequest(
         Double prime,
         LocalDate dateRecrutement,
         Integer soldeConge
-) {}
+) {
+
+}
 

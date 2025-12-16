@@ -1,5 +1,6 @@
 package ma.oralCare.service.modules.users.impl;
 
+import ma.oralCare.entities.base.Adresse;
 import ma.oralCare.entities.enums.RoleLibelle;
 import ma.oralCare.entities.users.Admin;
 import ma.oralCare.entities.users.Medecin;
@@ -56,15 +57,48 @@ public class UserManagementServiceImpl implements UserManagementService {
     // Création comptes
     // -------------------------------------------------------------------------
 
+    // Dans UserManagementServiceImpl.java, méthode createAdmin
+
     @Override
     public UserAccountDto createAdmin(CreateAdminRequest request) {
         Objects.requireNonNull(request);
+
+        // Initialiser l'objet Adresse (pour éviter le NullPointerException dans le Repository)
+        Adresse adresse = Adresse.builder()
+                // NOTE: Si le DTO fournit plus de champs d'adresse (numéro, rue, etc.),
+                // vous devriez les mapper ici. Sinon, utilisez la rue du DTO comme adresse complète.
+                .rue(request.adresse() != null ? request.adresse() : "")
+                .ville("Ville non spécifiée")
+                .codePostal("00000")
+                .pays("Maroc")
+                .build();
+
+        // Utilisez un ID d'administrateur de test par défaut
+        Long idCreePar = 1L;
+
+        // Construction de l'entité Admin
         Admin admin = Admin.builder()
+                // --- CHAMPS REQUIS (qui causaient l'erreur 'prenom' cannot be null) ---
                 .nom(request.nom())
+                .prenom(request.prenom()) // CORRIGÉ : Ajout du prénom
                 .email(request.email())
+                .cin(request.cin())
+                .tel(request.tel())
+                .sexe(request.sexe())
                 .login(request.login())
                 .motDePass(request.motDePasse())
+
+                // --- Champs Date / Autres ---
+                .dateNaissance(request.dateNaissance())
+
+                // --- Héritage/Relations ---
+                .adresse(adresse) // Correction du NullPointerException sur l'adresse
+                .creePar(idCreePar)
+
+                // Note: Les champs Staff (salaire, prime, etc.) du DTO sont ignorés ici car Admin n'hérite pas de Staff,
+                // mais ce n'est pas la cause de l'erreur actuelle.
                 .build();
+
         adminRepository.create(admin);
         return toDto(admin);
     }

@@ -1,6 +1,7 @@
 package ma.oralCare.repository.modules.users.impl;
 
 import ma.oralCare.conf.SessionFactory;
+import ma.oralCare.entities.base.Adresse;
 import ma.oralCare.entities.users.Admin;
 import ma.oralCare.repository.common.RowMappers;
 import ma.oralCare.repository.modules.users.api.AdminRepository;
@@ -49,7 +50,15 @@ public class AdminRepositoryImpl implements AdminRepository {
             // 1. BaseEntity
             try (PreparedStatement psBase = c.prepareStatement(SQL_INSERT_BASE, Statement.RETURN_GENERATED_KEYS)) {
                 psBase.setTimestamp(1, Timestamp.valueOf(now));
-                psBase.setLong(2, admin.getCreePar());
+
+                // >>> CORRECTION DU NULLPOINTEREXCEPTION <<<
+                Long creePar = admin.getCreePar();
+                if (creePar != null) {
+                    psBase.setLong(2, creePar);
+                } else {
+                    psBase.setNull(2, java.sql.Types.BIGINT);
+                }
+                // >>> FIN CORRECTION <<<
                 psBase.executeUpdate();
                 try (ResultSet keys = psBase.getGeneratedKeys()) {
                     if (keys.next()) baseId = keys.getLong(1);
@@ -62,6 +71,7 @@ public class AdminRepositoryImpl implements AdminRepository {
             // 2. Utilisateur
             try (PreparedStatement psUtilisateur = c.prepareStatement(SQL_INSERT_UTILISATEUR)) {
                 int i = 1;
+                Adresse adresse = admin.getAdresse();
                 psUtilisateur.setLong(i++, admin.getIdEntite());
                 psUtilisateur.setString(i++, admin.getNom());
                 psUtilisateur.setString(i++, admin.getPrenom());
@@ -109,7 +119,14 @@ public class AdminRepositoryImpl implements AdminRepository {
             // 1. BaseEntity (Mise à jour)
             try (PreparedStatement psBase = c.prepareStatement(SQL_UPDATE_BASE)) {
                 psBase.setTimestamp(1, Timestamp.valueOf(now));
-                psBase.setLong(2, admin.getModifiePar());
+                // >>> CORRECTION DU NULLPOINTEREXCEPTION (modifiePar) <<<
+                Long modifiePar = admin.getModifiePar();
+                if (modifiePar != null) {
+                    psBase.setLong(2, modifiePar);
+                } else {
+                    psBase.setNull(2, java.sql.Types.BIGINT);
+                }
+                // >>> FIN CORRECTION <<<
                 psBase.setLong(3, admin.getIdEntite());
                 psBase.executeUpdate();
                 admin.setDateDerniereModification(now);
