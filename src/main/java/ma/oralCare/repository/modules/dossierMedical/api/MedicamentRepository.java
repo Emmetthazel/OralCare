@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface MedicamentRepository extends CrudRepository<Medicament, Long> {
 
+    void save(Medicament medicament); // Ajout de la méthode save
 
     List<Medicament> findByNomContaining(String nomPartiel);
 

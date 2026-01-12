@@ -17,10 +17,13 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
     private final RoleRepository roleRepository;
 
+    // ✅ SOLUTION : Plus besoin de gérer la connexion ici.
+    // On instancie simplement le Repository avec son nouveau constructeur vide.
     public RoleManagementServiceImpl() {
-        this(new RoleRepositoryImpl());
+        this.roleRepository = new RoleRepositoryImpl();
     }
 
+    // Gardé pour les tests unitaires (Injection de dépendance)
     public RoleManagementServiceImpl(RoleRepository roleRepository) {
         this.roleRepository = Objects.requireNonNull(roleRepository);
     }
@@ -65,10 +68,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
     @Override
     public Role updateRolePrivileges(Long roleId, List<String> privileges) {
-        // Si le modèle Role n'a pas de champ "privileges", cette méthode peut être étendue plus tard.
-        // Pour l'instant, on retourne simplement le rôle chargé.
+        // Implémentation selon vos besoins
         return getRoleById(roleId);
     }
 }
-
-

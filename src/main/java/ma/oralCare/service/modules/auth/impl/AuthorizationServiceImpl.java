@@ -6,49 +6,35 @@ import ma.oralCare.service.modules.auth.dto.UserPrincipal;
 
 import java.util.Arrays;
 
-/**
- * Vérification simple des rôles / privilèges à partir d'un UserPrincipal.
- */
 public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public boolean hasRole(UserPrincipal principal, RoleLibelle role) {
-        if (principal == null || role == null) return false;
-        return principal.roles().contains(role);
+        return principal != null && principal.getRoles().contains(role.name());
     }
 
     @Override
     public boolean hasAnyRole(UserPrincipal principal, RoleLibelle... roles) {
-        if (principal == null || roles == null) return false;
-        return Arrays.stream(roles).anyMatch(r -> principal.roles().contains(r));
+        return principal != null && Arrays.stream(roles).anyMatch(r -> hasRole(principal, r));
     }
 
     @Override
     public boolean hasPrivilege(UserPrincipal principal, String privilege) {
-        if (principal == null || privilege == null) return false;
-        return principal.privileges().contains(privilege);
+        return principal != null && principal.getPrivileges().contains(privilege);
     }
 
     @Override
     public void checkRole(UserPrincipal principal, RoleLibelle role) {
-        if (!hasRole(principal, role)) {
-            throw new SecurityException("Accès refusé : rôle " + role + " requis");
-        }
+        if (!hasRole(principal, role)) throw new RuntimeException("Accès refusé : Rôle " + role + " requis.");
     }
 
     @Override
     public void checkAnyRole(UserPrincipal principal, RoleLibelle... roles) {
-        if (!hasAnyRole(principal, roles)) {
-            throw new SecurityException("Accès refusé : aucun des rôles requis n'est présent");
-        }
+        if (!hasAnyRole(principal, roles)) throw new RuntimeException("Accès refusé.");
     }
 
     @Override
     public void checkPrivilege(UserPrincipal principal, String privilege) {
-        if (!hasPrivilege(principal, privilege)) {
-            throw new SecurityException("Accès refusé : privilège requis manquant");
-        }
+        if (!hasPrivilege(principal, privilege)) throw new RuntimeException("Accès refusé : Privilège manquant.");
     }
 }
-
-

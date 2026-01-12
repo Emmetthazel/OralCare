@@ -1,30 +1,39 @@
-package ma.oralCare;
+/*package ma.oralCare;
 
-import ma.oralCare.entities.enums.*;
-import ma.oralCare.entities.patient.Patient;
-import ma.oralCare.entities.users.Medecin;
-import ma.oralCare.entities.cabinet.CabinetMedicale;
+import ma.oralCare.conf.SessionFactory;
+import ma.oralCare.mvc.ui.auth.LoginFrame;
+import ma.oralCare.repository.modules.users.impl.UtilisateurRepositoryImpl;
+import ma.oralCare.service.modules.auth.impl.AuthServiceImpl;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import javax.swing.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 
-/**
- * Point d'entree de l application OralCare.
- * Ce main est destiné à lancer l'application finale (GUI ou Console).
- */
 public class OralCareApp {
+
     public static void main(String[] args) {
 
-        System.out.println("=================================================");
-        System.out.println("=== DÉMARRAGE DE L'APPLICATION ORALCARE (V. 1.0) ===");
-        System.out.println("=================================================");
+        // --- 1. Test connexion JDBC ---
+        try (Connection conn = SessionFactory.getInstance().getConnection()) {
+            System.out.println("Driver JDBC chargé avec succès : " + conn.getMetaData().getDriverName());
+            System.out.println("Nouvelle connexion JDBC établie avec succès !");
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la connexion à la base de données.", e);
+        }
 
-        // --- LOGIQUE DE DÉMARRAGE DE L'APPLICATION ---
-        // Ici, vous lancerez le contrôleur principal, l'interface utilisateur,
-        // ou le premier menu de l'application.
+        // --- 2. Instanciation Repository et Service ---
+        UtilisateurRepositoryImpl utilisateurRepo = new UtilisateurRepositoryImpl();
+        AuthServiceImpl authService = new AuthServiceImpl(utilisateurRepo);
 
-        System.out.println("Application prête. En attente de l'interface utilisateur ou des commandes...");
 
-        // L'application tourne tant que le processus n'est pas arrêté.
+        // --- 7. Ici tu peux lancer ton UI Login ---
+        // Par exemple : LoginUI.launch();
+        SwingUtilities.invokeLater(() -> {
+            LoginFrame loginUI = new LoginFrame(); // pas besoin de modifier LoginUI
+            loginUI.setVisible(true);
+
+            // --- Création du controller pour gérer la logique du login ---
+        });
     }
 }
+*/

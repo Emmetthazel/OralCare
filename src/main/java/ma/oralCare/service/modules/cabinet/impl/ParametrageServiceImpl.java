@@ -15,27 +15,33 @@ public class ParametrageServiceImpl implements ParametrageService {
 
     private final CabinetMedicaleRepository cabinetRepository;
 
+    // ✅ Nettoyage des constructeurs complexes.
+    // Le repository gère maintenant ses propres connexions via SessionFactory.
     public ParametrageServiceImpl() {
-        this(new CabinetMedicaleRepositoryImpl());
+        this.cabinetRepository = new CabinetMedicaleRepositoryImpl();
     }
 
+    // Gardé uniquement pour les tests unitaires si nécessaire
     public ParametrageServiceImpl(CabinetMedicaleRepository cabinetRepository) {
         this.cabinetRepository = Objects.requireNonNull(cabinetRepository);
     }
 
+    @Override
     public Optional<CabinetMedicale> chargerParametrage(Long cabinetId) {
         if (cabinetId == null) return Optional.empty();
+        // Le repository ouvrira et fermera sa connexion en interne
         return cabinetRepository.findById(cabinetId);
     }
 
+    @Override
     public CabinetMedicale mettreAJourParametrage(CabinetMedicale cabinet) {
         Objects.requireNonNull(cabinet, "cabinet ne doit pas être null");
         if (cabinet.getIdEntite() == null) {
             throw new IllegalArgumentException("Le cabinet doit déjà exister pour être paramétré (idEntite non null)");
         }
+
+        // Mise à jour via le repository autonome
         cabinetRepository.update(cabinet);
         return cabinet;
     }
 }
-
-

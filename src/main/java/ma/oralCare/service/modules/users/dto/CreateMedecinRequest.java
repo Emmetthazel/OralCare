@@ -6,6 +6,7 @@ import ma.oralCare.entities.enums.Sexe;
 
 public record CreateMedecinRequest(
         String nom,
+        String prenom,
         String email,
         String adresse,
         String cin,

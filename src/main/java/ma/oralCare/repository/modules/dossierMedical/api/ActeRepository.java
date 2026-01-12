@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ActeRepository extends CrudRepository<Acte,Long> {
+    void save(Acte acte); // Ajout de la méthode save
     Optional<Acte> findByLibelle(String libelle);
     List<Acte> findByCategorie(String categorie);
     boolean existsById(Long id);

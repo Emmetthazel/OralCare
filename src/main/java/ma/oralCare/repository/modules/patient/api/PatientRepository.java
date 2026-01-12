@@ -21,5 +21,5 @@ public interface PatientRepository extends CrudRepository<Patient, Long> {
     void removeAllAntecedentsFromPatient(Long patientId);
     List<Antecedent> getAntecedentsOfPatient(Long patientId);
     List<Patient> getPatientsByAntecedent(Long antecedentId);
-
+    int countAll();
 }

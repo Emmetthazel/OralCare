@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface CabinetMedicaleRepository extends CrudRepository<CabinetMedicale, Long> {
 
-
+    long countAll();
+    long countActiveRecently();
     Optional<CabinetMedicale> findByNom(String nom);
     List<CabinetMedicale> findAllByNomContaining(String nom);
     List<CabinetMedicale> findAllByVille(String ville);

@@ -68,4 +68,14 @@ public class RDV extends BaseEntity {
                 statut
         );
     }
+    // Dans ma.oralCare.entities.agenda.RDV.java
+
+    public String getPatientNomComplet() {
+        if (this.dossierMedicale != null && this.dossierMedicale.getPatient() != null) {
+            String nom = this.dossierMedicale.getPatient().getNom();
+            String prenom = this.dossierMedicale.getPatient().getPrenom();
+            return nom.toUpperCase() + " " + prenom;
+        }
+        return "Patient Inconnu";
+    }
 }

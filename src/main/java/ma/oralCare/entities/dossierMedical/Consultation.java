@@ -21,6 +21,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 
 public class Consultation extends BaseEntity {
+    private String libelle; // ✅ Ajout du champ manquant
 
     private LocalDate date;
 

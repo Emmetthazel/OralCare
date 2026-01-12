@@ -11,6 +11,7 @@ import java.util.List;
 public interface OrdonnanceRepository extends CrudRepository<Ordonnance, Long> {
 
 
+
     List<Ordonnance> findByDossierMedicaleId(Long dossierId);
 
 

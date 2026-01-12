@@ -19,4 +19,6 @@ public interface RevenuesRepository extends CrudRepository<Revenues, Long> {
     Double calculateTotalRevenuesBetween(LocalDateTime startDate, LocalDateTime endDate);
 
     List<Revenues> findPage(int limit, int offset);
+
+    Double calculateDailyRevenues(java.time.LocalDate date);
 }

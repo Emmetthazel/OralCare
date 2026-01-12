@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum StatutRDV {
     CONFIRMED("Confirmé"),
     PENDING("En attente"),
+    IN_PROGRESS("En cours"),
     CANCELLED("Annulé"),
     COMPLETED("Terminé");
     

@@ -12,9 +12,11 @@ import java.util.Optional;
 public interface RDVRepository extends CrudRepository<RDV, Long> {
     List<RDV> findByDossierMedicaleId(Long dossierMedicaleId);
     Optional<RDV> findByConsultationId(Long consultationId);
+    List<RDV> findByDateAndMedecin(LocalDate date, Long medecinId);
     List<RDV> findByDate(LocalDate date);
     boolean existsByDateAndHeureAndMedecinId(LocalDate date, LocalTime heure, Long medecinId);
     RDV updateStatut(Long rdvId, StatutRDV nouveauStatut);
     List<RDV> findByStatut(StatutRDV statut);
-
+    int countAll();
+    int countByDate(LocalDate date);
 }

@@ -12,36 +12,46 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Implémentation simple de {@link AntecedentService} basée sur {@link AntecedentRepository}.
+ * Implémentation de {@link AntecedentService}.
+ * Cette version est corrigée pour fonctionner avec le Repository autonome.
  */
 public class AntecedentServiceImpl implements AntecedentService {
 
     private final AntecedentRepository antecedentRepository;
 
+    /**
+     * ✅ Constructeur par défaut.
+     * Initialise le repository autonome qui gère sa propre connexion via SessionFactory.
+     */
     public AntecedentServiceImpl() {
-        this(new AntecedentRepositoryImpl());
+        this.antecedentRepository = new AntecedentRepositoryImpl();
     }
 
+    /**
+     * ✅ Constructeur par injection.
+     * Utile pour les tests ou si l'on souhaite passer une instance spécifique.
+     * @param antecedentRepository l'instance du repository à utiliser.
+     */
     public AntecedentServiceImpl(AntecedentRepository antecedentRepository) {
-        this.antecedentRepository = Objects.requireNonNull(antecedentRepository);
+        this.antecedentRepository = Objects.requireNonNull(antecedentRepository, "Le repository ne peut pas être null");
     }
 
     // -------------------------------------------------------------------------
-    // CRUD
+    // Opérations CRUD
     // -------------------------------------------------------------------------
 
     @Override
     public Antecedent createAntecedent(Antecedent antecedent) {
-        Objects.requireNonNull(antecedent, "antecedent ne doit pas être null");
+        Objects.requireNonNull(antecedent, "L'antécédent ne doit pas être null");
         antecedentRepository.create(antecedent);
         return antecedent;
     }
 
     @Override
     public Antecedent updateAntecedent(Antecedent antecedent) {
-        Objects.requireNonNull(antecedent, "antecedent ne doit pas être null");
+        Objects.requireNonNull(antecedent, "L'antécédent ne doit pas être null");
         if (antecedent.getIdEntite() == null) {
-            throw new IllegalArgumentException("Impossible de mettre à jour un antécédent sans idEntite");
+            throw new IllegalArgumentException("Impossible de mettre à jour un antécédent sans ID");
         }
         antecedentRepository.update(antecedent);
         return antecedent;
@@ -60,12 +70,13 @@ public class AntecedentServiceImpl implements AntecedentService {
 
     @Override
     public void deleteAntecedent(Long id) {
-        if (id == null) return;
-        antecedentRepository.deleteById(id);
+        if (id != null) {
+            antecedentRepository.deleteById(id);
+        }
     }
 
     // -------------------------------------------------------------------------
-    // Recherches spécifiques
+    // Méthodes de recherche
     // -------------------------------------------------------------------------
 
     @Override
@@ -93,22 +104,21 @@ public class AntecedentServiceImpl implements AntecedentService {
     }
 
     // -------------------------------------------------------------------------
-    // Liaisons Many-to-Many
+    // Liaisons Patient-Antécédent
     // -------------------------------------------------------------------------
 
     @Override
     public void linkAntecedentToPatient(Long antecedentId, Long patientId) {
         if (antecedentId == null || patientId == null) {
-            throw new IllegalArgumentException("antecedentId et patientId doivent être non nuls");
+            throw new IllegalArgumentException("Les IDs de l'antécédent et du patient doivent être fournis");
         }
         antecedentRepository.linkAntecedentToPatient(antecedentId, patientId);
     }
 
     @Override
     public void unlinkAntecedentFromPatient(Long antecedentId, Long patientId) {
-        if (antecedentId == null || patientId == null) return;
-        antecedentRepository.unlinkAntecedentFromPatient(antecedentId, patientId);
+        if (antecedentId != null && patientId != null) {
+            antecedentRepository.unlinkAntecedentFromPatient(antecedentId, patientId);
+        }
     }
 }
-
-

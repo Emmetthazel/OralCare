@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface AntecedentRepository extends CrudRepository<Antecedent, Long> {
 
+    void save(Antecedent antecedent); // Ajout indispensable pour le Service
 
     List<Antecedent> findByCategorie(CategorieAntecedent categorie);
 

@@ -1,4 +1,4 @@
-package ma.oralCare.service.modules.patient.impl;
+/*package ma.oralCare.service.modules.patient.impl;
 
 import ma.oralCare.entities.patient.Antecedent;
 import ma.oralCare.entities.patient.Patient;
@@ -10,14 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Implémentation de {@link PatientService} qui délègue la logique
- * métier simple aux repositories Patient / Antecedent.
- *
- * Cette classe respecte le même style que la couche repository :
- * - utilisation directe des implémentations via new XxxRepositoryImpl()
- * - aucune dépendance à un framework d'injection.
- */
+
 public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository patientRepository;
@@ -148,3 +141,4 @@ public class PatientServiceImpl implements PatientService {
 }
 
 
+*/

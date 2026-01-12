@@ -1,300 +1,151 @@
 package ma.oralCare.repository.modules.dossierMedical.impl;
 
 import ma.oralCare.entities.dossierMedical.Certificat;
-import ma.oralCare.entities.dossierMedical.Consultation;
+import ma.oralCare.repository.common.RowMappers;
 import ma.oralCare.repository.modules.dossierMedical.api.CertificatRepository;
-import ma.oralCare.conf.SessionFactory;
-import ma.oralCare.repository.modules.dossierMedical.api.ConsultationRepository; // Supposons que vous ayez ce repository
-import ma.oralCare.repository.modules.dossierMedical.impl.ConsultationRepositoryImpl; // Implémentation ou une Factory
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class CertificatRepositoryImpl implements CertificatRepository {
 
-    private final ConsultationRepository consultationRepository = new ConsultationRepositoryImpl(); // Dépendance
+    private final Connection connection;
 
-    // Requêtes SQL
-// Ajoutez la table BaseEntity (be) via JOIN
-    private static final String SELECT_ALL_SQL =
-            "SELECT c.*, co.dossier_medicale_id, " +
-                    "be.date_creation, be.cree_par, be.date_derniere_modification, be.modifie_par " + // <-- AJOUT CRITIQUE
-                    "FROM Certificat c " +
-                    "JOIN BaseEntity be ON c.id_entite = be.id_entite " + // <-- AJOUT CRITIQUE
-                    "JOIN Consultation co ON c.consultation_id = co.id_entite " +
-                    "WHERE 1=1";
-    private static final String SELECT_BY_ID_SQL = SELECT_ALL_SQL + " AND c.id_entite = ?";
-    private static final String INSERT_SQL = "INSERT INTO BaseEntity (date_creation, cree_par) VALUES (?, ?)";
-    private static final String INSERT_CERTIFICAT_SQL = "INSERT INTO Certificat (id_entite, date_debut, date_fin, duree, note_medecin, consultation_id) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_BASE_SQL = "UPDATE BaseEntity SET date_derniere_modification = ?, modifie_par = ? WHERE id_entite = ?";
-    private static final String UPDATE_CERTIFICAT_SQL = "UPDATE Certificat SET date_debut = ?, date_fin = ?, duree = ?, note_medecin = ? WHERE id_entite = ?";
-    private static final String DELETE_BASE_SQL = "DELETE FROM BaseEntity WHERE id_entite = ?";
-    private static final String FIND_BY_DOSSIER_ID_SQL = SELECT_ALL_SQL + " AND co.dossier_medicale_id = ?";
-    private static final String FIND_BY_DATE_DEBUT_SQL = SELECT_ALL_SQL + " AND c.date_debut = ?";
-    private static final String FIND_VALID_CERTIFICATES_SQL = SELECT_ALL_SQL + " AND c.date_fin >= ?";
-    private static final String FIND_BY_NOTE_CONTAINING_SQL = SELECT_ALL_SQL + " AND c.note_medecin LIKE ?";
+    // ✅ SQL avec jointures pour récupérer les infos de BaseEntity et le lien Dossier Médical
+    private static final String BASE_SELECT_SQL = """
+        SELECT c.*, 
+               b.date_creation, b.date_derniere_modification, b.cree_par, b.modifie_par,
+               co.dossier_medicale_id
+        FROM Certificat c
+        JOIN BaseEntity b ON c.id_entite = b.id_entite
+        JOIN Consultation co ON c.consultation_id = co.id_entite
+        """;
 
-    // --- Mapper ---
-    private Certificat mapResultSetToCertificat(ResultSet rs) throws SQLException {
-        Certificat certificat = Certificat.builder()
-                .idEntite(rs.getLong("id_entite"))
-                .dateDebut(rs.getDate("date_debut") != null ? rs.getDate("date_debut").toLocalDate() : null)
-                .dateFin(rs.getDate("date_fin") != null ? rs.getDate("date_fin").toLocalDate() : null)
-                .duree(rs.getInt("duree"))
-                .noteMedecin(rs.getString("note_medecin"))
-                .build();
-
-        // Récupération des champs de BaseEntity
-        if (rs.getTimestamp("date_creation") != null) {
-            certificat.setDateCreation(rs.getTimestamp("date_creation").toLocalDateTime());
-        }
-        if (rs.getTimestamp("date_derniere_modification") != null) {
-            certificat.setDateDerniereModification(rs.getTimestamp("date_derniere_modification").toLocalDateTime());
-        }
-        certificat.setCreePar(rs.getLong("cree_par"));
-        certificat.setModifiePar(rs.getLong("modifie_par"));
-
-        // La consultation doit être chargée séparément (Lazy Loading ou juste l'ID)
-        // Pour l'instant, on laisse la consultation à null ou on initialise un stub
-
-        // On pourrait ajouter un champ 'consultation_id' si on le récupère du SELECT
-        // long consultationId = rs.getLong("consultation_id");
-
-        return certificat;
+    public CertificatRepositoryImpl(Connection connection) {
+        this.connection = connection;
     }
 
-    // --- CRUD Standard ---
+    // =========================================================================
+    //                                CRUD
+    // =========================================================================
 
     @Override
-    public List<Certificat> findAll() {
-        List<Certificat> certificats = new ArrayList<>();
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(SELECT_ALL_SQL);
-             ResultSet rs = ps.executeQuery()) {
+    public void create(Certificat certificat) {
+        String sqlBase = "INSERT INTO BaseEntity (date_creation, cree_par) VALUES (?, ?)";
+        String sqlCert = """
+            INSERT INTO Certificat (id_entite, date_debut, date_fin, duree, note_medecin, consultation_id) 
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+        try {
+            this.connection.setAutoCommit(false);
 
-            while (rs.next()) {
-                certificats.add(mapResultSetToCertificat(rs));
+            // 1. BaseEntity
+            try (PreparedStatement psBase = connection.prepareStatement(sqlBase, Statement.RETURN_GENERATED_KEYS)) {
+                psBase.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+                psBase.setLong(2, certificat.getCreePar() != null ? certificat.getCreePar() : 1L);
+                psBase.executeUpdate();
+                try (ResultSet keys = psBase.getGeneratedKeys()) {
+                    if (keys.next()) certificat.setIdEntite(keys.getLong(1));
+                }
             }
+
+            // 2. Certificat
+            try (PreparedStatement psCert = connection.prepareStatement(sqlCert)) {
+                psCert.setLong(1, certificat.getIdEntite());
+                psCert.setDate(2, Date.valueOf(certificat.getDateDebut()));
+                psCert.setDate(3, Date.valueOf(certificat.getDateFin()));
+                psCert.setInt(4, certificat.getDuree());
+                psCert.setString(5, certificat.getNoteMedecin());
+                psCert.setLong(6, certificat.getConsultation().getIdEntite());
+                psCert.executeUpdate();
+            }
+            this.connection.commit();
         } catch (SQLException e) {
-            System.err.println("Erreur lors de la récupération de tous les certificats: " + e.getMessage());
+            try { this.connection.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Erreur lors de la création du certificat", e);
         }
-        return certificats;
+    }
+
+    @Override
+    public void update(Certificat certificat) {
+        String sqlBase = "UPDATE BaseEntity SET date_derniere_modification = ?, modifie_par = ? WHERE id_entite = ?";
+        String sqlCert = """
+            UPDATE Certificat SET date_debut = ?, date_fin = ?, duree = ?, note_medecin = ? 
+            WHERE id_entite = ?
+            """;
+        try {
+            this.connection.setAutoCommit(false);
+
+            try (PreparedStatement psBase = connection.prepareStatement(sqlBase)) {
+                psBase.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+                psBase.setLong(2, certificat.getModifiePar() != null ? certificat.getModifiePar() : 1L);
+                psBase.setLong(3, certificat.getIdEntite());
+                psBase.executeUpdate();
+            }
+
+            try (PreparedStatement psCert = connection.prepareStatement(sqlCert)) {
+                psCert.setDate(1, Date.valueOf(certificat.getDateDebut()));
+                psCert.setDate(2, Date.valueOf(certificat.getDateFin()));
+                psCert.setInt(3, certificat.getDuree());
+                psCert.setString(4, certificat.getNoteMedecin());
+                psCert.setLong(5, certificat.getIdEntite());
+                psCert.executeUpdate();
+            }
+            this.connection.commit();
+        } catch (SQLException e) {
+            try { this.connection.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Optional<Certificat> findById(Long id) {
-        Certificat certificat = null;
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(SELECT_BY_ID_SQL)) {
-
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    certificat = mapResultSetToCertificat(rs);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la récupération du certificat ID " + id + ": " + e.getMessage());
-        }
-        return Optional.ofNullable(certificat);
-    }
-
-    @Override
-    public void create(Certificat newElement) {
-        Connection conn = null;
-        try {
-            conn = SessionFactory.getInstance().getConnection();
-            conn.setAutoCommit(false);
-
-            // 1. Insertion dans BaseEntity
-            try (PreparedStatement psBase = conn.prepareStatement(INSERT_SQL, Statement.RETURN_GENERATED_KEYS)) {
-                psBase.setTimestamp(1, Timestamp.valueOf(newElement.getDateCreation()));
-                psBase.setObject(2, newElement.getCreePar());
-                psBase.executeUpdate();
-
-                try (ResultSet generatedKeys = psBase.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        long newId = generatedKeys.getLong(1);
-                        newElement.setIdEntite(newId);
-
-                        // 2. Insertion dans Certificat
-                        try (PreparedStatement psCertificat = conn.prepareStatement(INSERT_CERTIFICAT_SQL)) {
-                            psCertificat.setLong(1, newId);
-                            psCertificat.setDate(2, Date.valueOf(newElement.getDateDebut()));
-                            psCertificat.setDate(3, Date.valueOf(newElement.getDateFin()));
-                            psCertificat.setInt(4, newElement.getDuree());
-                            psCertificat.setString(5, newElement.getNoteMedecin());
-                            psCertificat.setLong(6, newElement.getConsultation().getIdEntite());
-                            psCertificat.executeUpdate();
-                        }
-                    } else {
-                        throw new SQLException("Échec de la création, aucun ID généré.");
-                    }
-                }
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la création du certificat: " + e.getMessage());
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    System.err.println("Erreur lors du rollback: " + ex.getMessage());
-                }
-            }
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Erreur lors de la fermeture de la connexion: " + e.getMessage());
-                }
-            }
-        }
-    }
-
-    @Override
-    public void update(Certificat newValuesElement) {
-        Connection conn = null;
-        try {
-            conn = SessionFactory.getInstance().getConnection();
-            conn.setAutoCommit(false);
-
-            // 1. Mise à jour de BaseEntity
-            try (PreparedStatement psBase = conn.prepareStatement(UPDATE_BASE_SQL)) {
-                psBase.setTimestamp(1, Timestamp.valueOf(newValuesElement.getDateDerniereModification()));
-                psBase.setObject(2, newValuesElement.getModifiePar());
-                psBase.setLong(3, newValuesElement.getIdEntite());
-                psBase.executeUpdate();
-            }
-
-            // 2. Mise à jour de Certificat
-            try (PreparedStatement psCertificat = conn.prepareStatement(UPDATE_CERTIFICAT_SQL)) {
-                psCertificat.setDate(1, Date.valueOf(newValuesElement.getDateDebut()));
-                psCertificat.setDate(2, Date.valueOf(newValuesElement.getDateFin()));
-                psCertificat.setInt(3, newValuesElement.getDuree());
-                psCertificat.setString(4, newValuesElement.getNoteMedecin());
-                psCertificat.setLong(5, newValuesElement.getIdEntite());
-                psCertificat.executeUpdate();
-            }
-
-            conn.commit();
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la mise à jour du certificat ID " + newValuesElement.getIdEntite() + ": " + e.getMessage());
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    System.err.println("Erreur lors du rollback: " + ex.getMessage());
-                }
-            }
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Erreur lors de la fermeture de la connexion: " + e.getMessage());
-                }
-            }
-        }
-    }
-
-    @Override
-    public void delete(Certificat certificat) {
-        deleteById(certificat.getIdEntite());
+        return executeQuery(BASE_SELECT_SQL + " WHERE c.id_entite = ?", id).stream().findFirst();
     }
 
     @Override
     public void deleteById(Long id) {
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(DELETE_BASE_SQL)) {
-
-            // Grâce à ON DELETE CASCADE sur BaseEntity, une seule suppression suffit.
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM BaseEntity WHERE id_entite = ?")) {
             ps.setLong(1, id);
             ps.executeUpdate();
-
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la suppression du certificat ID " + id + ": " + e.getMessage());
-        }
+        } catch (SQLException e) { throw new RuntimeException(e); }
     }
 
-    // --- Méthodes Spécifiques à Certificat ---
+    // =========================================================================
+    //                         MÉTHODES SPÉCIFIQUES
+    // =========================================================================
 
     @Override
-    public List<Certificat> findByDossierMedicaleId(Long dossierMedicaleId) {
-        List<Certificat> certificats = new ArrayList<>();
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_DOSSIER_ID_SQL)) {
-
-            ps.setLong(1, dossierMedicaleId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    certificats.add(mapResultSetToCertificat(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la recherche des certificats pour le dossier ID " + dossierMedicaleId + ": " + e.getMessage());
-        }
-        return certificats;
-    }
-
-    @Override
-    public List<Certificat> findByDateDebut(LocalDate date) {
-        List<Certificat> certificats = new ArrayList<>();
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_DATE_DEBUT_SQL)) {
-
-            ps.setDate(1, Date.valueOf(date));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    certificats.add(mapResultSetToCertificat(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la recherche des certificats par date de début: " + e.getMessage());
-        }
-        return certificats;
+    public List<Certificat> findByDossierMedicaleId(Long dossierId) {
+        return executeQuery(BASE_SELECT_SQL + " WHERE co.dossier_medicale_id = ?", dossierId);
     }
 
     @Override
     public List<Certificat> findValidCertificates(LocalDate currentDate) {
-        List<Certificat> certificats = new ArrayList<>();
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_VALID_CERTIFICATES_SQL)) {
-
-            // WHERE c.date_fin >= ?
-            ps.setDate(1, Date.valueOf(currentDate));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    certificats.add(mapResultSetToCertificat(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la recherche des certificats valides: " + e.getMessage());
-        }
-        return certificats;
+        return executeQuery(BASE_SELECT_SQL + " WHERE c.date_fin >= ?", Date.valueOf(currentDate));
     }
 
-    @Override
-    public List<Certificat> findByNoteMedecinContaining(String noteFragment) {
-        List<Certificat> certificats = new ArrayList<>();
-        try (Connection conn = SessionFactory.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_NOTE_CONTAINING_SQL)) {
+    // =========================================================================
+    //                        UTILITAIRES TECHNIQUES
+    // =========================================================================
 
-            ps.setString(1, "%" + noteFragment + "%");
+    private List<Certificat> executeQuery(String sql, Object... params) {
+        List<Certificat> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) ps.setObject(i + 1, params[i]);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    certificats.add(mapResultSetToCertificat(rs));
-                }
+                while (rs.next()) list.add(RowMappers.mapCertificat(rs));
             }
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la recherche des certificats par note: " + e.getMessage());
-        }
-        return certificats;
+        } catch (SQLException e) { throw new RuntimeException(e); }
+        return list;
     }
+
+    @Override public List<Certificat> findAll() { return executeQuery(BASE_SELECT_SQL); }
+    @Override public void delete(Certificat c) { if(c != null) deleteById(c.getIdEntite()); }
+    @Override public List<Certificat> findByDateDebut(LocalDate date) { return executeQuery(BASE_SELECT_SQL + " WHERE c.date_debut = ?", Date.valueOf(date)); }
+    @Override public List<Certificat> findByNoteMedecinContaining(String fragment) { return executeQuery(BASE_SELECT_SQL + " WHERE c.note_medecin LIKE ?", "%" + fragment + "%"); }
 }

@@ -33,6 +33,10 @@ public class StaffRepositoryImpl implements StaffRepository {
         JOIN BaseEntity b ON u.id_entite = b.id_entite
         """; // FIN DE LA CORRECTION
 
+    private final Connection connection;
+    public StaffRepositoryImpl(Connection connection) {
+        this.connection = connection;
+    }
     @Override
     public void create(Staff staff) {
         Long baseId = null;

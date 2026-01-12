@@ -1,23 +1,29 @@
 package ma.oralCare.service.modules.dashboard_statistiques.api;
 
 import ma.oralCare.entities.cabinet.Statistiques;
-import java.util.List;
-import java.util.Optional;
 
+import java.util.List;
+import java.util.Map;
 
 public interface StatistiquesService {
-    // Créer une nouvelle statistique
-    Statistiques createStatistique(Statistiques statistiques);
+    List<Statistiques> getAll(); // Cette ligne doit exister
+    /**
+     * Récupère le nombre total de patients inscrits.
+     */
+    int getTotalPatientsCount();
 
-    // Mettre à jour une statistique existante
-    Statistiques updateStatistique(Statistiques statistiques);
+    /**
+     * Récupère le nombre de visites (rendez-vous) prévues pour aujourd'hui.
+     */
+    int getTodayVisitsCount();
 
-    // Récupérer une statistique par son ID
-    Optional<Statistiques> getById(Long id);
+    /**
+     * Récupère le nombre total de rendez-vous enregistrés dans le système.
+     */
+    int getTotalApptsCount();
 
-    // Récupérer toutes les statistiques
-    List<Statistiques> getAll();
-
-    // Supprimer une statistique par son ID
-    void deleteById(Long id);
+    /**
+     * Optionnel : Récupère toutes les stats d'un coup dans une Map pour optimiser les appels.
+     */
+    Map<String, Integer> getDashboardSummary();
 }

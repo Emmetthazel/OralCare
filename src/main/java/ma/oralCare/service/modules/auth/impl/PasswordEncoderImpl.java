@@ -1,38 +1,39 @@
 package ma.oralCare.service.modules.auth.impl;
 
 import ma.oralCare.service.modules.auth.api.PasswordEncoder;
+import org.mindrot.jbcrypt.BCrypt;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-
-/**
- * Implémentation très simple de PasswordEncoder basée sur SHA-256.
- *
- * NOTE: pour un vrai système en production, il faudrait utiliser un algorithme
- * de hachage adapté aux mots de passe (BCrypt, Argon2, ...). Ici on reste simple
- * car l'objectif est pédagogique.
- */
 public class PasswordEncoderImpl implements PasswordEncoder {
 
     @Override
     public String encode(CharSequence rawPassword) {
-        if (rawPassword == null) return null;
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(rawPassword.toString().getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 non supporté dans cet environnement", e);
+        if (rawPassword == null) {
+            throw new IllegalArgumentException("Le mot de passe ne peut pas être nul");
         }
+        // BCrypt attend une String, on convertit donc le CharSequence
+        return BCrypt.hashpw(rawPassword.toString(), BCrypt.gensalt());
     }
 
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
-        if (rawPassword == null || encodedPassword == null) return false;
-        return encode(rawPassword).equals(encodedPassword);
+        // 1. Sécurité : Si l'un des paramètres est null, la correspondance est impossible
+        if (rawPassword == null || encodedPassword == null) {
+            return false;
+        }
+
+        try {
+            // 2. BCrypt.checkpw extrait automatiquement le sel du 'encodedPassword'
+            // pour hacher le 'rawPassword' et comparer les résultats.
+            return BCrypt.checkpw(rawPassword.toString(), encodedPassword);
+
+        } catch (IllegalArgumentException e) {
+            // 3. Gestion d'erreur : Si le format du hash en base est invalide
+            // (par exemple si c'est du texte clair comme "Qd5$XNIeD0" au lieu d'un hash BCrypt)
+            System.err.println("[BCRYPT-ERROR] Le format du mot de passe en base est invalide (pas un hash BCrypt).");
+            return false;
+        } catch (Exception e) {
+            // 4. Capture générique pour éviter tout plantage de l'application lors de l'auth
+            return false;
+        }
     }
 }
-
-

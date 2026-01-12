@@ -4,6 +4,8 @@ import ma.oralCare.entities.enums.*;
 import ma.oralCare.entities.base.*;
 import ma.oralCare.entities.patient.*;
 import ma.oralCare.entities.dossierMedical.*;
+import ma.oralCare.entities.system.LogAudit;
+import ma.oralCare.entities.system.SystemConfig;
 import ma.oralCare.entities.users.*;
 import ma.oralCare.entities.cabinet.*;
 import ma.oralCare.entities.agenda.*;
@@ -95,25 +97,21 @@ public final class RowMappers {
     }
 
     private static void mapBaseEntityFields(ResultSet rs, BaseEntity entity) throws SQLException {
-        entity.setIdEntite(rs.getLong("id_entite"));
-        Timestamp dateCreation = rs.getTimestamp("date_creation");
-        entity.setDateCreation(dateCreation != null ? dateCreation.toLocalDateTime() : null);
-        Timestamp dateModification = rs.getTimestamp("date_derniere_modification");
-        entity.setDateDerniereModification(dateModification != null ? dateModification.toLocalDateTime() : null);
+        // 1. On extrait les données du ResultSet immédiatement
+        long id = rs.getLong("id_entite");
+        Timestamp tc = rs.getTimestamp("date_creation");
+        Timestamp tm = rs.getTimestamp("date_derniere_modification");
 
-        long creeParValue = rs.getLong("cree_par");
-        if (rs.wasNull()) {
-            entity.setCreePar(null);
-        } else {
-            entity.setCreePar(creeParValue);
-        }
+        // Gestion propre des colonnes qui peuvent être NULL
+        Long creePar = rs.getObject("cree_par") != null ? rs.getLong("cree_par") : null;
+        Long modifiePar = rs.getObject("modifie_par") != null ? rs.getLong("modifie_par") : null;
 
-        long modifieParValue = rs.getLong("modifie_par");
-        if (rs.wasNull()) {
-            entity.setModifiePar(null); // Si NULL en DB, assigner NULL à l'objet Java (évite le 0)
-        } else {
-            entity.setModifiePar(modifieParValue);
-        }
+        // 2. On remplit l'objet Java
+        entity.setIdEntite(id);
+        entity.setDateCreation(tc != null ? tc.toLocalDateTime() : null);
+        entity.setDateDerniereModification(tm != null ? tm.toLocalDateTime() : null);
+        entity.setCreePar(creePar);
+        entity.setModifiePar(modifiePar);
     }
 
     public static Antecedent mapAntecedent(ResultSet rs) throws SQLException {
@@ -132,18 +130,19 @@ public final class RowMappers {
     }
 
     public static Adresse mapAdresse(ResultSet rs) throws SQLException {
-        Adresse a = new Adresse();
+        // On vérifie si on a au moins une colonne d'adresse pour éviter de créer un objet vide
+        String rue = rs.getString("rue");
+        if (rue == null) {
+            return null; // Pas d'adresse enregistrée pour cet utilisateur
+        }
 
-        // Mappage des champs de l'Adresse
+        Adresse a = new Adresse();
+        a.setRue(rue);
         a.setNumero(rs.getString("numero"));
-        a.setRue(rs.getString("rue"));
         a.setCodePostal(rs.getString("code_postal"));
         a.setVille(rs.getString("ville"));
         a.setPays(rs.getString("pays"));
-
-        // Le champ 'complement' peut être NULL en BD
         a.setComplement(rs.getString("complement"));
-
         return a;
     }
 
@@ -409,18 +408,50 @@ public final class RowMappers {
     public static RDV mapRDV(ResultSet rs) throws SQLException {
         RDV rdv = new RDV();
 
+        // 1. On mappe les champs communs (id, date_creation, etc.)
         mapBaseEntityFields(rs, rdv);
 
+        // 2. On mappe les champs spécifiques au RDV
         Date sqlDate = rs.getDate("date");
         rdv.setDate(sqlDate != null ? sqlDate.toLocalDate() : null);
+
         Time sqlTime = rs.getTime("heure");
         rdv.setHeure(sqlTime != null ? sqlTime.toLocalTime() : null);
+
         rdv.setMotif(rs.getString("motif"));
+
         String statutStr = rs.getString("statut");
         rdv.setStatut(statutStr != null ? StatutRDV.valueOf(statutStr) : null);
+
         rdv.setNoteMedecin(rs.getString("note_medecin"));
-        rdv.setDossierMedicale(createDossierRef(rs.getLong("dossier_medicale_id")));
-        rdv.setConsultation(createConsultationRef(rs.getLong("consultation_id")));
+
+        // 3. Gestion du Dossier Médical et du Patient (Crucial pour ton Service)
+        long dossierId = rs.getLong("dossier_medicale_id");
+        if (!rs.wasNull()) {
+            DossierMedicale dm = createDossierRef(dossierId);
+
+            // Tenter de récupérer le nom/prénom si la requête SQL incluait un JOIN Patient
+            try {
+                String pNom = rs.getString("patient_nom");
+                String pPrenom = rs.getString("patient_prenom");
+
+                if (pNom != null || pPrenom != null) {
+                    Patient p = new Patient();
+                    p.setNom(pNom);
+                    p.setPrenom(pPrenom);
+                    dm.setPatient(p); // 🔗 On lie le patient au dossier
+                }
+            } catch (SQLException e) {
+                // Pas d'erreur fatale si le JOIN n'existait pas dans la requête SQL
+            }
+            rdv.setDossierMedicale(dm);
+        }
+
+        // 4. Gestion de la Consultation (Lien optionnel)
+        long consId = rs.getLong("consultation_id");
+        if (!rs.wasNull()) {
+            rdv.setConsultation(createConsultationRef(consId));
+        }
 
         return rdv;
     }
@@ -566,4 +597,29 @@ public final class RowMappers {
     }
 
 
+    public static LogAudit mapLogAudit(ResultSet rs) throws SQLException {
+        LogAudit log = new LogAudit();
+        log.setIdLog(rs.getLong("id_log"));
+        log.setDateAction(rs.getDate("date_action").toLocalDate());
+        log.setHeureAction(rs.getTime("heure_action").toLocalTime());
+        log.setUtilisateurLogin(rs.getString("utilisateur_login"));
+        log.setIdCabinetConcerne(rs.getLong("id_cabinet_concerne"));
+        log.setActionDescription(rs.getString("action_description"));
+        return log;
+    }
+
+    /**
+     * Mappe une ligne de la table system_config vers un objet SystemConfig
+     */
+    public static SystemConfig mapSystemConfig(ResultSet rs) throws SQLException {
+        SystemConfig config = new SystemConfig();
+        config.setConfigKey(rs.getString("config_key"));
+        config.setConfigValue(rs.getString("config_value"));
+        config.setStatut(rs.getString("statut"));
+        config.setDerniereMaj(rs.getTimestamp("derniere_maj").toLocalDateTime());
+        config.setDescription(rs.getString("description"));
+        return config;
+    }
 }
+
+

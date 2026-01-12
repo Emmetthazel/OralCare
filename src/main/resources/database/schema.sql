@@ -54,7 +54,7 @@ CREATE TABLE cabinet_medicale (
 
 CREATE TABLE Patient (
     id_entite BIGINT PRIMARY KEY,   -- correspond à BaseEntity.id_entite
-
+    cin VARCHAR(20) UNIQUE,
     nom VARCHAR(255) NOT NULL,
     prenom VARCHAR(255) NOT NULL,
     date_de_naissance DATE,
@@ -62,7 +62,6 @@ CREATE TABLE Patient (
     sexe VARCHAR(10) NOT NULL,
     adresse VARCHAR(255),
     telephone VARCHAR(20),
-
     assurance VARCHAR(10) NOT NULL,
 
     CONSTRAINT chk_patient_sexe CHECK (sexe IN ('MALE', 'FEMALE', 'OTHER')),
@@ -219,10 +218,10 @@ CREATE TABLE SituationFinanciere (
 
 CREATE TABLE Consultation (
     id_entite BIGINT PRIMARY KEY,
-
+    libelle VARCHAR(255),
     date DATE,
     statut VARCHAR(20) NOT NULL CHECK (
-        statut IN ('SCHEDULED', 'COMPLETED', 'CANCELLED')
+        statut IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')
     ),
     observation_medecin TEXT,
 
@@ -252,15 +251,21 @@ CREATE TABLE Facture (
 
     date_facture DATETIME NOT NULL,
 
-    consultation_id BIGINT UNIQUE NULL,
+    consultation_id BIGINT NOT NULL,
 
-    situation_financiere_id BIGINT UNIQUE NULL,
+    situation_financiere_id BIGINT NULL,
+
+    patient_id BIGINT NOT NULL,
 
     CONSTRAINT fk_facture_base FOREIGN KEY (id_entite)
         REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
 
+    CONSTRAINT fk_facture_patient
+            FOREIGN KEY (patient_id) REFERENCES Patient(id_entite)
+            ON DELETE CASCADE,
+
     CONSTRAINT fk_facture_consultation FOREIGN KEY (consultation_id)
-        REFERENCES Consultation(id_entite) ON DELETE SET NULL, -- Suppression en cascade non nécessaire ici si Facture est dépendante
+        REFERENCES Consultation(id_entite) ON DELETE CASCADE, -- Suppression en cascade non nécessaire ici si Facture est dépendante
 
     CONSTRAINT fk_facture_situation_financiere FOREIGN KEY (situation_financiere_id)
         REFERENCES SituationFinanciere(id_entite) ON DELETE SET NULL
@@ -271,7 +276,7 @@ CREATE TABLE Certificat (
     date_debut DATE,
     date_fin DATE,
     duree INT,
-    note_medecin VARCHAR(500),
+    note_medecin TEXT,
     consultation_id BIGINT UNIQUE NOT NULL,
     FOREIGN KEY (id_entite) REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
     FOREIGN KEY (consultation_id) REFERENCES Consultation(id_entite) ON DELETE CASCADE
@@ -491,12 +496,13 @@ CREATE TABLE intervention_medecin (
     id_entite BIGINT PRIMARY KEY,
     prix_de_patient DECIMAL(10,2),
     num_dent INT,
-    consultation_id BIGINT NULL,
+    consultation_id BIGINT NOT NULL,
     acte_id BIGINT,
+    duree_en_minutes INT,
     CONSTRAINT fk_intervention_base FOREIGN KEY (id_entite)
         REFERENCES BaseEntity(id_entite) ON DELETE CASCADE,
     CONSTRAINT fk_intervention_consultation FOREIGN KEY (consultation_id)
-        REFERENCES Consultation(id_entite) ON DELETE SET NULL,
+        REFERENCES Consultation(id_entite) ON DELETE CASCADE,
     CONSTRAINT fk_intervention_acte FOREIGN KEY (acte_id)
         REFERENCES acte(id_entite) ON DELETE SET NULL
 );
@@ -510,3 +516,20 @@ CREATE TABLE Patient_Antecedent (
     FOREIGN KEY (antecedent_id) REFERENCES Antecedent(id_entite) ON DELETE CASCADE
 );
 
+CREATE TABLE logs_audit (
+    id_log BIGINT AUTO_INCREMENT PRIMARY KEY,
+    date_action DATE DEFAULT (CURRENT_DATE),
+    heure_action TIME DEFAULT (CURRENT_TIME),
+    utilisateur_login VARCHAR(255) NOT NULL,
+    id_cabinet_concerne BIGINT DEFAULT NULL,
+    action_description TEXT NOT NULL,
+    FOREIGN KEY (id_cabinet_concerne) REFERENCES cabinet_medicale(id_entite) ON DELETE SET NULL
+);
+
+CREATE TABLE system_config (
+    config_key VARCHAR(100) PRIMARY KEY,
+    config_value VARCHAR(255),
+    statut VARCHAR(50),
+    derniere_maj DATETIME DEFAULT CURRENT_TIMESTAMP,
+    description TEXT
+);
