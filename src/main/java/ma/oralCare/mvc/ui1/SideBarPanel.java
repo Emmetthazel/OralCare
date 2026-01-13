@@ -71,6 +71,13 @@ public class SideBarPanel extends JPanel {
         addMenuButton("Dossiers Médicaux", "DOSSIERS");
         addMenuButton("Caisse & Factures", "CAISSE");
 
+        // --- MODULES SECRÉTAIRE ---
+        if (userRole != null && (userRole.equalsIgnoreCase("SECRETAIRE") || userRole.equalsIgnoreCase("SECRETARY"))) {
+            addMenuButton("Situations Financières", "SITUATION_FINANCIERE");
+            addMenuButton("File d'Attente", "FILE_ATTENTE");
+            addMenuButton("Notifications", "NOTIFICATIONS");
+        }
+
         // --- ADMIN ---
         if (userRole != null && userRole.equalsIgnoreCase("ADMIN")) {
             addMenuButton("Utilisateurs", "ADMIN_USERS");
@@ -121,6 +128,42 @@ public class SideBarPanel extends JPanel {
         }
         selectedBtn.setBackground(ACCENT_COLOR);
     }
+    
+    /**
+     * Met en évidence le bouton correspondant au viewID spécifié
+     * @param viewID L'identifiant de la vue (ex: "DOSSIERS")
+     */
+    public void highlightButtonByViewID(String viewID) {
+        for (Component c : menuContainer.getComponents()) {
+            if (c instanceof JPanel) {
+                c.setBackground(BACKGROUND_COLOR);
+            }
+        }
+        
+        // Chercher le bouton correspondant au viewID
+        for (Component c : menuContainer.getComponents()) {
+            if (c instanceof JPanel) {
+                JPanel btn = (JPanel) c;
+                // Le viewID est stocké dans le MouseListener, on doit le retrouver
+                // Pour l'instant, on utilise une correspondance basée sur le texte
+                JLabel lbl = (JLabel) btn.getComponent(0);
+                String buttonText = lbl.getText();
+                
+                if ((viewID.equals("DOSSIERS") && buttonText.equals("Dossiers Médicaux")) ||
+                    (viewID.equals("PATIENTS") && buttonText.equals("Gestion Patients")) ||
+                    (viewID.equals("DASHBOARD") && buttonText.equals("Tableau de Bord")) ||
+                    (viewID.equals("VISUAL_AGENDA") && buttonText.equals("Agenda")) ||
+                    (viewID.equals("RDV") && buttonText.equals("Liste des RDV")) ||
+                    (viewID.equals("CAISSE") && buttonText.equals("Caisse & Factures")) ||
+                    (viewID.equals("SITUATION_FINANCIERE") && buttonText.equals("Situations Financières")) ||
+                    (viewID.equals("FILE_ATTENTE") && buttonText.equals("File d'Attente")) ||
+                    (viewID.equals("NOTIFICATIONS") && buttonText.equals("Notifications"))) {
+                    btn.setBackground(ACCENT_COLOR);
+                    break;
+                }
+            }
+        }
+    }
 
     private void setupLogoutButton() {
         JButton btnLogout = new JButton("Déconnexion");
@@ -133,7 +176,12 @@ public class SideBarPanel extends JPanel {
         btnLogout.addActionListener(e -> {
             int choice = JOptionPane.showConfirmDialog(mainFrame, "Quitter l'application ?", "Déconnexion", JOptionPane.YES_NO_OPTION);
             if (choice == JOptionPane.YES_OPTION) {
-                System.exit(0);
+                mainFrame.dispose();
+                // Retour au LoginFrame
+                SwingUtilities.invokeLater(() -> {
+                    ma.oralCare.mvc.ui.auth.LoginFrame loginFrame = new ma.oralCare.mvc.ui.auth.LoginFrame();
+                    loginFrame.setVisible(true);
+                });
             }
         });
         add(btnLogout, BorderLayout.SOUTH);

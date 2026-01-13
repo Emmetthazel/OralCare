@@ -120,6 +120,10 @@ public class MainFrame extends JFrame implements Navigatable {
             centerPanel.add(new JPanel(), "ACTES");
         } else {
             centerPanel.add(new DossierMedicalSecretairePanel(this), "DOSSIERS");
+            // Modules spécifiques secrétaire
+            centerPanel.add(new SituationFinanciereSecretairePanel(this), "SITUATION_FINANCIERE");
+            centerPanel.add(new FileAttentePanel(this), "FILE_ATTENTE");
+            centerPanel.add(new NotificationsPanel(this), "NOTIFICATIONS");
         }
 
         // --- 4. PROFILE (Appelé par MenuBarPanel) ---
@@ -143,6 +147,36 @@ public class MainFrame extends JFrame implements Navigatable {
             ((PatientManagementPanel) currentComp).refreshTable();
         }
         // ... (ajoutez les autres panels au besoin)
+    }
+
+    /**
+     * Permet d'accéder au SideBarPanel pour mettre en évidence les boutons
+     */
+    public SideBarPanel getSideBarPanel() {
+        return sideBar;
+    }
+    
+    /**
+     * Permet d'accéder directement au DossierMedicalPanel actuel
+     */
+    public JPanel getDossierMedicalPanel() {
+        try {
+            // Le centerPanel est dans BorderLayout.CENTER
+            Component centerComponent = ((BorderLayout) getContentPane().getLayout()).getLayoutComponent(BorderLayout.CENTER);
+            if (centerComponent instanceof JPanel) {
+                JPanel centerPanel = (JPanel) centerComponent;
+                
+                // Chercher le DossierMedicalPanel ou DossierMedicalSecretairePanel dans le centerPanel
+                for (Component comp : centerPanel.getComponents()) {
+                    if (comp instanceof DossierMedicalPanel || comp instanceof DossierMedicalSecretairePanel) {
+                        return (JPanel) comp;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'accès au DossierMedicalPanel: " + e.getMessage());
+        }
+        return null;
     }
 
     private Component getVisibleCard() {

@@ -128,7 +128,12 @@ public class AdminSidebar extends JPanel {
                     "Voulez-vous quitter la session administrateur ?",
                     "Déconnexion", JOptionPane.YES_NO_OPTION);
             if (choice == JOptionPane.YES_OPTION) {
-                System.exit(0);
+                mainFrame.dispose();
+                // Retour au LoginFrame
+                SwingUtilities.invokeLater(() -> {
+                    ma.oralCare.mvc.ui.auth.LoginFrame loginFrame = new ma.oralCare.mvc.ui.auth.LoginFrame();
+                    loginFrame.setVisible(true);
+                });
             }
         });
 

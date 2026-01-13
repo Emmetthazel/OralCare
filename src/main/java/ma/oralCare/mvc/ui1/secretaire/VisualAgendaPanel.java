@@ -3,6 +3,7 @@ package ma.oralCare.mvc.ui1.secretaire;
 import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.mvc.ui1.MainFrame;
 import ma.oralCare.mvc.ui1.secretaire.dialog.RendezVousDialog;
+import ma.oralCare.mvc.ui1.secretaire.dialog.CreateRDVDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -51,7 +52,30 @@ public class VisualAgendaPanel extends JPanel {
         JButton btnPrev = new JButton("<");
         JButton btnNext = new JButton(">");
         JButton btnToday = new JButton("Aujourd'hui");
-        JButton btnRefresh = new JButton("Actualiser 🔄");
+        JButton btnRefresh = new JButton("Actualiser ");
+        JButton btnNewRDV = new JButton(" Nouveau RDV");
+        JButton btnBackToList = new JButton("📋 Retour à la liste des RDV");
+        
+        btnBackToList.setBackground(new Color(52, 152, 219));
+        btnBackToList.setForeground(Color.WHITE);
+        btnBackToList.setFocusPainted(false);
+        btnBackToList.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btnBackToList.addActionListener(e -> {
+            mainFrame.showView("AGENDA"); // Retour à la liste des RDV
+        });
+
+        btnNewRDV.setBackground(new Color(46, 204, 113));
+        btnNewRDV.setForeground(Color.WHITE);
+        btnNewRDV.setFocusPainted(false);
+        btnNewRDV.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btnNewRDV.addActionListener(e -> {
+            // Ouvrir le dialog de création RDV avec la date du jour
+            CreateRDVDialog dialog = new CreateRDVDialog(mainFrame, LocalDate.now(), LocalTime.now().getHour());
+            dialog.setVisible(true);
+            if (dialog.isConfirmed()) {
+                refreshAgenda(); // Mise à jour en temps réel
+            }
+        });
 
         lblCurrentRange = new JLabel();
         lblCurrentRange.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -66,6 +90,8 @@ public class VisualAgendaPanel extends JPanel {
 
         navPanel.add(btnPrev); navPanel.add(btnToday); navPanel.add(btnNext);
         navPanel.add(Box.createHorizontalStrut(20)); navPanel.add(lblCurrentRange);
+        navPanel.add(Box.createHorizontalStrut(20)); navPanel.add(btnNewRDV);
+        navPanel.add(Box.createHorizontalStrut(10)); navPanel.add(btnBackToList);
 
         JPanel legendPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         legendPanel.setOpaque(false);
@@ -163,10 +189,11 @@ public class VisualAgendaPanel extends JPanel {
             btnAdd.setContentAreaFilled(false);
             btnAdd.setBorderPainted(false);
             btnAdd.addActionListener(e -> {
-                RendezVousDialog dialog = new RendezVousDialog(mainFrame, null);
-                dialog.setScheduledDateTime(date, time);
+                CreateRDVDialog dialog = new CreateRDVDialog(mainFrame, date, time.getHour());
                 dialog.setVisible(true);
-                refreshAgenda();
+                if (dialog.isConfirmed()) {
+                    refreshAgenda(); // Mise à jour en temps réel
+                }
             });
             slot.add(btnAdd);
         }

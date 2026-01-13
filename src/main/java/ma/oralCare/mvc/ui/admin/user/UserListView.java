@@ -3,7 +3,7 @@ package ma.oralCare.mvc.ui.admin.user;
 import ma.oralCare.entities.users.Utilisateur;
 import ma.oralCare.mvc.controllers.admin.api.UserManagementController;
 import ma.oralCare.mvc.dto.admin.UserStaffDTO;
-import ma.oralCare.mvc.ui1.Navigatable; // ✅ Assurez-vous que l'import est correct
+import ma.oralCare.mvc.ui1.Navigatable;
 import org.jdatepicker.impl.JDatePanelImpl;
 import org.jdatepicker.impl.JDatePickerImpl;
 import org.jdatepicker.impl.UtilDateModel;
@@ -137,6 +137,283 @@ public class UserListView extends JPanel {
         mainContent.add(rowContainer);
     }
 
+    private void toggleEditPanel(String email, JPanel container) {
+        if (detailPanels.containsKey(email)) {
+            container.remove(detailPanels.get(email));
+            detailPanels.remove(email);
+        } else {
+            Utilisateur u = controller.getUserDetails(email);
+            String password = controller.getUserPassword(email);
+            
+            JPanel detailPanel = new JPanel(new BorderLayout());
+            detailPanel.setBackground(new Color(248, 249, 250));
+            detailPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            ));
+
+            // Panel principal avec GridBagLayout pour un meilleur alignement
+            JPanel mainPanel = new JPanel(new GridBagLayout());
+            mainPanel.setBackground(new Color(248, 249, 250));
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(3, 5, 3, 5);
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            // Ajouter tous les champs de l'utilisateur
+            int row = 0;
+            
+            // Login
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("🔑 Login:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField loginField = new JTextField(u.getLogin(), 20);
+            loginField.setEditable(false);
+            loginField.setBackground(Color.WHITE);
+            mainPanel.add(loginField, gbc);
+            row++;
+
+            // Mot de passe
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("🔐 Mot de passe:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField passwordField = new JTextField(password, 20);
+            passwordField.setEditable(false);
+            passwordField.setBackground(new Color(255, 255, 200));
+            if (password.startsWith("[HASHÉ")) {
+                passwordField.setForeground(Color.RED);
+            } else {
+                passwordField.setForeground(new Color(0, 128, 0));
+            }
+            mainPanel.add(passwordField, gbc);
+            row++;
+
+            // Nom
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("👤 Nom:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fNom = new JTextField(u.getNom(), 20);
+            fNom.setBackground(Color.WHITE);
+            mainPanel.add(fNom, gbc);
+            row++;
+
+            // Prénom
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("👤 Prénom:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fPrenom = new JTextField(u.getPrenom(), 20);
+            fPrenom.setBackground(Color.WHITE);
+            mainPanel.add(fPrenom, gbc);
+            row++;
+
+            // Email
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("📧 Email:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fEmail = new JTextField(u.getEmail(), 20);
+            fEmail.setEditable(false);
+            fEmail.setBackground(Color.WHITE);
+            mainPanel.add(fEmail, gbc);
+            row++;
+
+            // Téléphone
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("📱 Téléphone:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fTel = new JTextField(u.getTel(), 20);
+            fTel.setBackground(Color.WHITE);
+            mainPanel.add(fTel, gbc);
+            row++;
+
+            // CIN
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("🆔 CIN:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fCin = new JTextField(u.getCin(), 20);
+            fCin.setBackground(Color.WHITE);
+            mainPanel.add(fCin, gbc);
+            row++;
+
+            // Date de naissance
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("🎂 Date naissance:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fDateNaissance = new JTextField(
+                u.getDateNaissance() != null ? u.getDateNaissance().toString() : "N/A", 20);
+            fDateNaissance.setEditable(false);
+            fDateNaissance.setBackground(Color.WHITE);
+            mainPanel.add(fDateNaissance, gbc);
+            row++;
+
+            // Sexe
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("⚧ Sexe:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            JTextField fSexe = new JTextField(u.getSexe() != null ? u.getSexe().getLibelle() : "N/A", 20);
+            fSexe.setBackground(Color.WHITE);
+            mainPanel.add(fSexe, gbc);
+            row++;
+
+            // Adresse
+            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
+            mainPanel.add(new JLabel("🏠 Adresse:"), gbc);
+            gbc.gridx = 1; gbc.weightx = 0.7;
+            String adresse = u.getAdresse() != null ? u.getAdresse().getAdresseComplete() : "N/A";
+            JTextField fAdresse = new JTextField(adresse, 20);
+            fAdresse.setEditable(false);
+            fAdresse.setBackground(Color.WHITE);
+            mainPanel.add(fAdresse, gbc);
+            row++;
+
+            // Panel des boutons
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+            buttonPanel.setBackground(new Color(248, 249, 250));
+            
+            JButton btnSave = createStyledButton("💾 Sauver", SUCCESS_COLOR);
+            JButton btnCancel = createStyledButton("❌ Fermer", DANGER_COLOR);
+            JButton btnResetPwd = createStyledButton("🔄 Réinitialiser MDP", WARNING_COLOR);
+            
+            btnSave.addActionListener(e -> {
+                String ville = u.getAdresse() != null ? u.getAdresse().getVille() : "N/A";
+                controller.updateUser(email, fNom.getText(), fPrenom.getText(), fTel.getText(), fCin.getText(), ville);
+                container.remove(detailPanel);
+                detailPanels.remove(email);
+                mainContent.revalidate();
+                mainContent.repaint();
+            });
+            
+            btnCancel.addActionListener(e -> {
+                container.remove(detailPanel);
+                detailPanels.remove(email);
+                mainContent.revalidate();
+                mainContent.repaint();
+            });
+            
+            btnResetPwd.addActionListener(e -> {
+                String newPwd = controller.resetPassword(email);
+                if (newPwd != null) {
+                    passwordField.setText(newPwd);
+                    passwordField.setForeground(new Color(0, 128, 0));
+                }
+            });
+            
+            buttonPanel.add(btnSave);
+            buttonPanel.add(btnCancel);
+            buttonPanel.add(btnResetPwd);
+
+            // Assemblage final
+            detailPanel.add(mainPanel, BorderLayout.CENTER);
+            detailPanel.add(buttonPanel, BorderLayout.SOUTH);
+            
+            container.add(detailPanel);
+            detailPanels.put(email, detailPanel);
+        }
+        mainContent.revalidate();
+        mainContent.repaint();
+    }
+
+    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, Component comp) {
+        gbc.gridy = row; gbc.gridx = 0; gbc.weightx = 0.3;
+        p.add(new JLabel(label), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.7;
+        p.add(comp, gbc);
+    }
+
+    private JPanel createFooterPanel() {
+        JPanel f = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 15));
+        f.setBackground(LIGHT_BG);
+        JButton btnReset = createStyledButton("Réinitialiser MDP", WARNING_COLOR);
+        btnReset.addActionListener(e -> {
+            if (selectedEmail != null) controller.resetPassword(selectedEmail);
+            else JOptionPane.showMessageDialog(this, "Sélectionnez un utilisateur.");
+        });
+        f.add(btnReset);
+        return f;
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(LIGHT_BG);
+        p.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        JPanel searchLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchLeft.setOpaque(false);
+        searchField = new JTextField(20);
+        searchField.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) { renderHierarchy(); }
+        });
+        searchLeft.add(new JLabel("🔍 Recherche :"));
+        searchLeft.add(searchField);
+
+        JPanel actionRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        actionRight.setOpaque(false);
+
+        JButton btnAddCabinet = createStyledButton("+ Nouveau Cabinet", new Color(41, 128, 185));
+
+        // Logic de navigation vers le formulaire plein écran
+        btnAddCabinet.addActionListener(e -> {
+            // Remonter vers MainFrame via l'interface Navigatable
+            Component parent = SwingUtilities.getAncestorOfClass(Navigatable.class, this);
+            if (parent instanceof Navigatable nav) {
+                nav.showView("FORM_CABINET");
+            } else {
+                // Fallback si Navigatable n'est pas trouvé
+                System.err.println("Erreur: MainFrame n'implémente pas Navigatable ou n'est pas accessible.");
+            }
+        });
+
+        actionRight.add(btnAddCabinet);
+        p.add(searchLeft, BorderLayout.WEST);
+        p.add(actionRight, BorderLayout.EAST);
+        return p;
+    }
+
+    private JButton createStyledButton(String text, Color color) {
+        JButton b = new JButton(text);
+        b.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        b.setForeground(color);
+        b.setBackground(Color.WHITE);
+        b.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(color), BorderFactory.createEmptyBorder(5, 12, 5, 12)));
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return b;
+    }
+
+    private void addCabinetHeader(String name) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        p.setBackground(new Color(236, 240, 241));
+        p.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        JLabel lbl = new JLabel("Cabinet : " + name);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        p.add(lbl);
+        mainContent.add(p);
+    }
+
+    private void addRoleSubtitle(String cabinetName, String title) {
+        JPanel h = new JPanel(new BorderLayout());
+        h.setOpaque(false);
+        h.setBorder(new EmptyBorder(10, 25, 5, 20));
+        h.setAlignmentX(Component.LEFT_ALIGNMENT);
+        h.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        JLabel l = new JLabel(title);
+        l.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        l.setForeground(Color.GRAY);
+        JButton btnAdd = createStyledButton("+ Ajouter", SUCCESS_COLOR);
+        btnAdd.addActionListener(e -> showCreationDialog(cabinetName, title));
+        h.add(l, BorderLayout.WEST); h.add(btnAdd, BorderLayout.EAST);
+        mainContent.add(h);
+    }
+
+    private void resetRowsBackground() {
+        for (Component c : mainContent.getComponents()) {
+            if (c instanceof JPanel) {
+                for (Component sub : ((JPanel) c).getComponents()) {
+                    if (sub instanceof JPanel) sub.setBackground(Color.WHITE);
+                }
+            }
+        }
+    }
+
     private void showCreationDialog(String cabinetName, String roleType) {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(new EmptyBorder(15, 15, 15, 15));
@@ -235,137 +512,29 @@ public class UserListView extends JPanel {
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
-            } else { success = true; }
-        }
-    }
-
-    private void toggleEditPanel(String email, JPanel container) {
-        if (detailPanels.containsKey(email)) {
-            container.remove(detailPanels.get(email));
-            detailPanels.remove(email);
-        } else {
-            Utilisateur u = controller.getUserDetails(email);
-            JPanel editPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-            editPanel.setBackground(new Color(248, 249, 250));
-
-            JTextField fNom = new JTextField(u.getNom(), 8);
-            JTextField fPrenom = new JTextField(u.getPrenom(), 8);
-            JButton btnSave = createStyledButton("💾 Sauver", SUCCESS_COLOR);
-            btnSave.addActionListener(e -> {
-                controller.updateUser(email, fNom.getText(), fPrenom.getText(), u.getTel(), u.getCin(), "Ville");
-                renderHierarchy();
-            });
-
-            editPanel.add(new JLabel("Nom:")); editPanel.add(fNom);
-            editPanel.add(new JLabel("Prénom:")); editPanel.add(fPrenom);
-            editPanel.add(btnSave);
-            container.add(editPanel);
-            detailPanels.put(email, editPanel);
-        }
-        mainContent.revalidate();
-        mainContent.repaint();
-    }
-
-    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, Component comp) {
-        gbc.gridy = row; gbc.gridx = 0; gbc.weightx = 0.3;
-        p.add(new JLabel(label), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        p.add(comp, gbc);
-    }
-
-    private JPanel createFooterPanel() {
-        JPanel f = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 15));
-        f.setBackground(LIGHT_BG);
-        JButton btnReset = createStyledButton("Réinitialiser MDP", WARNING_COLOR);
-        btnReset.addActionListener(e -> {
-            if (selectedEmail != null) controller.resetPassword(selectedEmail);
-            else JOptionPane.showMessageDialog(this, "Sélectionnez un utilisateur.");
-        });
-        f.add(btnReset);
-        return f;
-    }
-
-    // ✅ MODIFICATION ICI : Navigation vers le formulaire pro
-    private JPanel createSearchPanel() {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setBackground(LIGHT_BG);
-        p.setBorder(new EmptyBorder(15, 15, 15, 15));
-
-        JPanel searchLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        searchLeft.setOpaque(false);
-        searchField = new JTextField(20);
-        searchField.addKeyListener(new KeyAdapter() {
-            public void keyReleased(KeyEvent e) { renderHierarchy(); }
-        });
-        searchLeft.add(new JLabel("🔍 Recherche :"));
-        searchLeft.add(searchField);
-
-        JPanel actionRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        actionRight.setOpaque(false);
-
-        JButton btnAddCabinet = createStyledButton("+ Nouveau Cabinet", new Color(41, 128, 185));
-
-        // Logic de navigation vers le formulaire plein écran
-        btnAddCabinet.addActionListener(e -> {
-            // Remonter vers MainFrame via l'interface Navigatable
-            Component parent = SwingUtilities.getAncestorOfClass(Navigatable.class, this);
-            if (parent instanceof Navigatable nav) {
-                nav.showView("FORM_CABINET");
             } else {
-                // Fallback si Navigatable n'est pas trouvé
-                System.err.println("Erreur: MainFrame n'implémente pas Navigatable ou n'est pas accessible.");
+                break;
             }
-        });
-
-        actionRight.add(btnAddCabinet);
-        p.add(searchLeft, BorderLayout.WEST);
-        p.add(actionRight, BorderLayout.EAST);
-        return p;
+        }
     }
 
-    private JButton createStyledButton(String text, Color color) {
-        JButton b = new JButton(text);
-        b.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        b.setForeground(color);
-        b.setBackground(Color.WHITE);
-        b.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(color), BorderFactory.createEmptyBorder(5, 12, 5, 12)));
-        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return b;
-    }
+    // Formatter pour le DatePicker
+    private static class DateLabelFormatter extends JFormattedTextField.AbstractFormatter {
+        private String datePattern = "dd-MM-yyyy";
+        private SimpleDateFormat dateFormatter = new SimpleDateFormat(datePattern);
 
-    private void addCabinetHeader(String name) {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
-        p.setBackground(new Color(236, 240, 241));
-        p.setAlignmentX(Component.LEFT_ALIGNMENT);
-        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        JLabel lbl = new JLabel("Cabinet : " + name);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        p.add(lbl);
-        mainContent.add(p);
-    }
+        @Override
+        public Object stringToValue(String text) throws java.text.ParseException {
+            return dateFormatter.parse(text);
+        }
 
-    private void addRoleSubtitle(String cabinetName, String title) {
-        JPanel h = new JPanel(new BorderLayout());
-        h.setOpaque(false);
-        h.setBorder(new EmptyBorder(10, 25, 5, 20));
-        h.setAlignmentX(Component.LEFT_ALIGNMENT);
-        h.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        JLabel l = new JLabel(title);
-        l.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        l.setForeground(Color.GRAY);
-        JButton btnAdd = createStyledButton("+ Ajouter", SUCCESS_COLOR);
-        btnAdd.addActionListener(e -> showCreationDialog(cabinetName, title));
-        h.add(l, BorderLayout.WEST); h.add(btnAdd, BorderLayout.EAST);
-        mainContent.add(h);
-    }
-
-    private void resetRowsBackground() {
-        for (Component c : mainContent.getComponents()) {
-            if (c instanceof JPanel) {
-                for (Component sub : ((JPanel) c).getComponents()) {
-                    if (sub instanceof JPanel) sub.setBackground(Color.WHITE);
-                }
+        @Override
+        public String valueToString(Object value) {
+            if (value != null) {
+                java.util.Calendar cal = (java.util.Calendar) value;
+                return dateFormatter.format(cal.getTime());
             }
+            return "";
         }
     }
 }

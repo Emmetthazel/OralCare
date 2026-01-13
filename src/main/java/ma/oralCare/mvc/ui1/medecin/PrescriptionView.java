@@ -29,9 +29,9 @@ public class PrescriptionView extends JPanel {
         // --- ENTÊTE (Infos Patient) ---
         JPanel headerPanel = new JPanel(new GridLayout(1, 3, 10, 10));
         headerPanel.setOpaque(false);
-        headerPanel.add(new JLabel("<html>👤 Patient : <b>Sara K.</b></html>"));
-        headerPanel.add(new JLabel("<html>📅 Consultation : <b>Contrôle</b></html>"));
-        headerPanel.add(new JLabel("<html>Statut : <span style='color:green;'>EN COURS</span></html>"));
+        headerPanel.add(new JLabel("<html>👤 Patient : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>📅 Consultation : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>Statut : <span style='color:green;'>-</span></html>"));
         add(headerPanel, BorderLayout.NORTH);
 
         // --- CENTRE : SPLIT PANE (Liste en haut, Détails en bas) ---
@@ -77,15 +77,6 @@ public class PrescriptionView extends JPanel {
         centerPanel.add(listPanel);
         centerPanel.add(detailPanel);
         add(centerPanel, BorderLayout.CENTER);
-
-        loadMockData();
-    }
-
-    private void loadMockData() {
-        ordonnanceModel.addRow(new Object[]{"01", "08/01/2026", "Dr. Amine", "2", "▶ Voir"});
-        prescriptionModel.addRow(new Object[]{"Paracétamol 500mg", "20", "3/jour", "5 jours"});
-        prescriptionModel.addRow(new Object[]{"Dentifrice Médical", "1", "2/jour", "10 jours"});
-        txtObservations.setText("Prendre soin de l'hygiène buccale, éviter le sucre.");
     }
 
     private JPanel createStyledPanel(String title) {

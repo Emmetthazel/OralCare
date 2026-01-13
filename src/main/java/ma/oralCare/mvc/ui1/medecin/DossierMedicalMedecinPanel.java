@@ -130,8 +130,7 @@ public class DossierMedicalMedecinPanel extends JPanel {
             return;
         }
         modelSuggestions.clear();
-        modelSuggestions.addElement("Bennani Yassine — BK654321 — 0612345678");
-        modelSuggestions.addElement("Mansouri Fatine — AB123456 — 0677889900");
+        // Les suggestions seront récupérées depuis la base de données via le controller/service
 
         if (modelSuggestions.getSize() > 0) {
             menuSuggestions.show(txtSearch, 0, txtSearch.getHeight());

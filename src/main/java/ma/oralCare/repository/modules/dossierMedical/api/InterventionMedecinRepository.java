@@ -1,4 +1,4 @@
-/*package ma.oralCare.repository.modules.dossierMedical.api;
+package ma.oralCare.repository.modules.dossierMedical.api;
 
 import ma.oralCare.entities.dossierMedical.Acte;
 import ma.oralCare.entities.dossierMedical.InterventionMedecin;
@@ -17,11 +17,9 @@ public interface InterventionMedecinRepository extends CrudRepository<Interventi
     boolean existsByConsultationActeAndDent(Long consultationId, Long acteId, Integer numDent);
     List<InterventionMedecin> findByNumDent(Integer numDent);
     void supprimerSoin(Long id);
-    void modifierSoin(InterventionMedecin intervention);
     List<InterventionMedecin> listerSoinsParConsultation(Long consultationId);
     List<InterventionMedecin> obtenirHistoriqueParDent(Integer numDent);
     Double obtenirTotalFinancierSeance(Long consultationId);
     void appliquerRemise(Long interventionId, Double pourcentage);
     Optional<InterventionMedecin> trouverParId(Long id);
 }
-*/

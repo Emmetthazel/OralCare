@@ -102,9 +102,7 @@ public class OrdonnancePanel extends JPanel {
 
         if (patientId == null) return;
 
-        // Simulation de données (À remplacer par appel API/DAO)
-        modelOrdonnances.addRow(new Object[]{"07/01/2026", "Douleur molaire", "2", "Paracétamol, Ibuprofen"});
-        modelOrdonnances.addRow(new Object[]{"20/12/2025", "Nettoyage", "1", "Amoxicilline"});
+        // Les données seront récupérées depuis la base de données via le controller/service
     }
 
     private void updateDetails() {
@@ -115,12 +113,10 @@ public class OrdonnancePanel extends JPanel {
 
             lblDateEmission.setText("Date émission : " + date);
             lblConsultation.setText("Consultation : " + motif);
-            lblNotes.setText("Notes : Prendre après les repas, éviter alcool.");
+            lblNotes.setText("Notes : -");
 
-            // Simulation prescriptions détaillées
+            // Les prescriptions détaillées seront récupérées depuis la base de données via le controller/service
             modelPrescriptions.setRowCount(0);
-            modelPrescriptions.addRow(new Object[]{"Paracétamol", "500 mg", "5 jours", "3 fois/jour"});
-            modelPrescriptions.addRow(new Object[]{"Ibuprofen", "200 mg", "3 jours", "2 fois/jour"});
         }
     }
 }

@@ -1,0 +1,208 @@
+@startuml Architecture Modulaire OralCare - Vue Simplifiée
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam backgroundColor #FFFFFF
+
+title Architecture Modulaire - Application OralCare\nGestion de Cabinet Dentaire
+
+' ============================================
+' COUCHE ENTITIES (Modèles de données)
+' ============================================
+package "Entities (Domaine Métier)" #E3F2FD {
+    package "Core Entities" {
+        [Patient]
+        [Utilisateur/Medecin/Secretaire/Admin]
+        [DossierMedicale]
+        [Consultation]
+        [RDV]
+        [Facture]
+        [Ordonnance/Certificat]
+        [Acte/InterventionMedecin]
+    }
+}
+
+' ============================================
+' COUCHE REPOSITORY (Accès aux données)
+' ============================================
+package "Repository (Persistence)" #C8E6C9 {
+    interface "CrudRepository<T,ID>" as CrudRepo
+    class "RowMappers" as RowMappers
+    
+    package "Modules Repository" {
+        interface "PatientRepository" as PatientRepo
+        interface "ConsultationRepository" as ConsultRepo
+        interface "RDVRepository" as RDVRepo
+        interface "DossierMedicaleRepository" as DossierRepo
+        
+        class "PatientRepositoryImpl" as PatientRepoImpl
+        class "ConsultationRepositoryImpl" as ConsultRepoImpl
+        class "RDVRepositoryImpl" as RDVRepoImpl
+        class "DossierMedicaleRepositoryImpl" as DossierRepoImpl
+    }
+}
+
+' ============================================
+' COUCHE SERVICE (Logique Métier)
+' ============================================
+package "Service (Business Logic)" #FFF9C4 {
+    package "Modules Service" {
+        interface "PatientService" as PatientSvc
+        interface "ConsultationService" as ConsultSvc
+        interface "RDVService" as RDVSvc
+        interface "DossierMedicaleService" as DossierSvc
+        interface "AuthService" as AuthSvc
+        
+        class "PatientServiceImpl" as PatientSvcImpl
+        class "ConsultationServiceImpl" as ConsultSvcImpl
+        class "RDVServiceImpl" as RDVSvcImpl
+        class "DossierMedicaleServiceImpl" as DossierSvcImpl
+        class "AuthServiceImpl" as AuthSvcImpl
+    }
+}
+
+' ============================================
+' COUCHE CONTROLLER (Contrôleur MVC)
+' ============================================
+package "Controllers (MVC)" #F8BBD0 {
+    package "Modules Controller" {
+        interface "PatientController" as PatientCtrl
+        interface "ConsultationController" as ConsultCtrl
+        interface "RDVController" as RDVCtrl
+        interface "DossierMedicaleController" as DossierCtrl
+        
+        class "PatientControllerImpl" as PatientCtrlImpl
+        class "ConsultationControllerImpl" as ConsultCtrlImpl
+        class "RDVControllerImpl" as RDVCtrlImpl
+        class "DossierMedicaleControllerImpl" as DossierCtrlImpl
+    }
+}
+
+' ============================================
+' COUCHE UI (Présentation)
+' ============================================
+package "UI (Presentation)" #E1BEE7 {
+    package "Vues Médecin" {
+        [DashboardPanel]
+        [RDVPanel]
+        [ConsultationPanel]
+        [PatientListView]
+        [MedicalRecordDetailView]
+    }
+    
+    [MainFrame] as MainFrame
+    [LoginFrame] as LoginFrame
+}
+
+' ============================================
+' COUCHE CONFIGURATION
+' ============================================
+package "Configuration" #BCAAA4 {
+    [SessionFactory]
+    [ApplicationContext]
+}
+
+database "MySQL Database" as DB
+
+' ============================================
+' RELATIONS ENTRE LES COUCHES
+' ============================================
+
+' Entities -> Repository
+[Patient] --> PatientRepo
+[Consultation] --> ConsultRepo
+[RDV] --> RDVRepo
+
+' Repository Implementation
+PatientRepoImpl ..|> PatientRepo
+PatientRepoImpl ..|> CrudRepo
+ConsultRepoImpl ..|> ConsultRepo
+RDVRepoImpl ..|> RDVRepo
+
+PatientRepoImpl --> RowMappers
+ConsultRepoImpl --> RowMappers
+
+PatientRepoImpl --> DB : "JDBC"
+ConsultRepoImpl --> DB
+RDVRepoImpl --> DB
+
+' Service -> Repository
+PatientSvc --> PatientRepo
+ConsultSvc --> ConsultRepo
+ConsultSvc --> DossierRepo
+RDVSvc --> RDVRepo
+DossierSvc --> DossierRepo
+
+PatientSvcImpl ..|> PatientSvc
+ConsultSvcImpl ..|> ConsultSvc
+RDVSvcImpl ..|> RDVSvc
+DossierSvcImpl ..|> DossierSvc
+
+PatientSvcImpl --> PatientRepoImpl
+ConsultSvcImpl --> ConsultRepoImpl
+RDVSvcImpl --> RDVRepoImpl
+DossierSvcImpl --> DossierRepoImpl
+
+' Controller -> Service
+PatientCtrl --> PatientSvc
+ConsultCtrl --> ConsultSvc
+RDVCtrl --> RDVSvc
+DossierCtrl --> DossierSvc
+
+PatientCtrlImpl ..|> PatientCtrl
+ConsultCtrlImpl ..|> ConsultCtrl
+RDVCtrlImpl ..|> RDVCtrl
+DossierCtrlImpl ..|> DossierCtrl
+
+PatientCtrlImpl --> PatientSvcImpl
+ConsultCtrlImpl --> ConsultSvcImpl
+RDVCtrlImpl --> RDVSvcImpl
+DossierCtrlImpl --> DossierSvcImpl
+
+' UI -> Controller
+MainFrame --> PatientCtrlImpl
+MainFrame --> ConsultCtrlImpl
+MainFrame --> RDVCtrlImpl
+MainFrame --> DossierCtrlImpl
+
+[DashboardPanel] --> PatientCtrlImpl
+[RDVPanel] --> RDVCtrlImpl
+[ConsultationPanel] --> ConsultCtrlImpl
+[PatientListView] --> PatientCtrlImpl
+[MedicalRecordDetailView] --> DossierCtrlImpl
+
+LoginFrame --> AuthSvcImpl
+AuthSvcImpl --> AuthSvc
+
+' Configuration
+[SessionFactory] --> DB
+PatientRepoImpl ..> [SessionFactory] : uses
+ConsultRepoImpl ..> [SessionFactory] : uses
+
+note right of PatientRepo
+  **Repository Layer**
+  - Interface API dans modules.{module}.api
+  - Implémentation dans modules.{module}.impl
+  - Utilise JDBC pur
+  - Mapping via RowMappers
+end note
+
+note right of PatientSvc
+  **Service Layer**
+  - Interface API dans modules.{module}.api
+  - Implémentation dans modules.{module}.impl
+  - Logique métier
+  - Validation
+  - Transactions
+end note
+
+note right of PatientCtrl
+  **Controller Layer**
+  - Interface API dans controllers.{module}.api
+  - Implémentation dans controllers.{module}.impl
+  - Gestion des événements UI
+  - Navigation
+end note
+
+@enduml

@@ -1,4 +1,4 @@
-/*package ma.oralCare.repository.modules.dossierMedical.impl;
+package ma.oralCare.repository.modules.dossierMedical.impl;
 
 import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.entities.dossierMedical.Consultation;
@@ -163,4 +163,3 @@ public class ConsultationRepositoryImpl implements ConsultationRepository {
     @Override public void addIntervention(Long cid, InterventionMedecin i) { }
     @Override public void delete(Consultation c) { if(c != null) deleteById(c.getIdEntite()); }
 }
-*/

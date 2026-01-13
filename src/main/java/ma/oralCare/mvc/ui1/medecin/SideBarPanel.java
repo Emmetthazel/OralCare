@@ -128,8 +128,11 @@ public class SideBarPanel extends JPanel {
                     "Déconnexion", JOptionPane.YES_NO_OPTION);
             if (choice == JOptionPane.YES_OPTION) {
                 mainFrame.dispose();
-                // Ici, vous pourriez ré-ouvrir la fenêtre de Login
-                System.exit(0);
+                // Retour au LoginFrame
+                SwingUtilities.invokeLater(() -> {
+                    ma.oralCare.mvc.ui.auth.LoginFrame loginFrame = new ma.oralCare.mvc.ui.auth.LoginFrame();
+                    loginFrame.setVisible(true);
+                });
             }
         });
 

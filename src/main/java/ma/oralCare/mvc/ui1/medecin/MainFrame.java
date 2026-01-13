@@ -4,6 +4,22 @@ import ma.oralCare.mvc.controllers.RDV.api.RDVController;
 import ma.oralCare.mvc.controllers.RDV.impl.RDVControllerImpl;
 import ma.oralCare.mvc.controllers.dashboard.api.DashboardController;
 import ma.oralCare.mvc.controllers.dashboard.impl.DashboardControllerImpl;
+import ma.oralCare.mvc.controllers.consultation.api.ConsultationController;
+import ma.oralCare.mvc.controllers.consultation.impl.ConsultationControllerImpl;
+import ma.oralCare.mvc.controllers.dossier.api.DossierMedicaleController;
+import ma.oralCare.mvc.controllers.dossier.impl.DossierMedicaleControllerImpl;
+import ma.oralCare.mvc.controllers.ordonnance.api.OrdonnanceController;
+import ma.oralCare.mvc.controllers.ordonnance.impl.OrdonnanceControllerImpl;
+import ma.oralCare.mvc.controllers.certificat.api.CertificatController;
+import ma.oralCare.mvc.controllers.certificat.impl.CertificatControllerImpl;
+import ma.oralCare.mvc.controllers.acte.api.ActeController;
+import ma.oralCare.mvc.controllers.acte.impl.ActeControllerImpl;
+import ma.oralCare.mvc.controllers.intervention.api.InterventionMedecinController;
+import ma.oralCare.mvc.controllers.intervention.impl.InterventionMedecinControllerImpl;
+import ma.oralCare.mvc.controllers.situation.api.SituationFinanciereController;
+import ma.oralCare.mvc.controllers.situation.impl.SituationFinanciereControllerImpl;
+import ma.oralCare.mvc.controllers.patient.api.PatientController;
+import ma.oralCare.mvc.controllers.patient.impl.PatientControllerImpl;
 import ma.oralCare.mvc.ui1.FooterPanel;
 import ma.oralCare.mvc.ui1.HeaderPanel;
 import ma.oralCare.service.modules.RDV.api.RDVService;
@@ -31,12 +47,26 @@ public class MainFrame extends JFrame {
     private RDVController rdvController;
 
     private ConsultationPanel consultationPanel;
+    private ConsultationController consultationController;
+
     private PatientListView patientListView;
+    private PatientController patientController;
+
     private MedicalRecordDetailView medicalRecordDetailView;
+    private DossierMedicaleController dossierMedicaleController;
+
     private PrescriptionView prescriptionView;
+    private OrdonnanceController ordonnanceController;
+
     private TreatmentView treatmentView;
+    private ActeController acteController;
+    private InterventionMedecinController interventionMedecinController;
+
     private CertificateView certificateView;
+    private CertificatController certificatController;
+
     private FinancialSituationView financialSituationView;
+    private SituationFinanciereController situationFinanciereController;
 
     // --- Getters ---
     public ConsultationPanel getConsultationPanel() { return this.consultationPanel; }
@@ -88,16 +118,38 @@ public class MainFrame extends JFrame {
         // Module Rendez-vous
         this.rdvPanel = new RDVPanel();
         Long medecinId = (currentUser != null) ? currentUser.getId() : null;
-        this.rdvPanel.setController(rdvController);
+        // TODO: Créer RDVService et initialiser RDVController
+        // this.rdvController = new RDVControllerImpl(rdvService, rdvPanel, medecinId);
+        // this.rdvPanel.setController(rdvController);
 
-        // ✅ Initialisation des nouvelles vues
+        // ✅ Module Consultation
         this.consultationPanel = new ConsultationPanel();
+        this.consultationController = new ConsultationControllerImpl(consultationPanel, this);
+
+        // ✅ Module Patients
         this.patientListView = new PatientListView();
+        this.patientController = new PatientControllerImpl(patientListView);
+
+        // ✅ Module Dossiers Médicaux
         this.medicalRecordDetailView = new MedicalRecordDetailView();
-        this.treatmentView = new TreatmentView();
+        this.dossierMedicaleController = new DossierMedicaleControllerImpl(medicalRecordDetailView);
+
+        // ✅ Module Ordonnances
         this.prescriptionView = new PrescriptionView();
+        this.ordonnanceController = new OrdonnanceControllerImpl(prescriptionView);
+
+        // ✅ Module Actes et Soins
+        this.treatmentView = new TreatmentView();
+        this.acteController = new ActeControllerImpl(treatmentView);
+        this.interventionMedecinController = new InterventionMedecinControllerImpl(treatmentView);
+
+        // ✅ Module Certificats
         this.certificateView = new CertificateView();
+        this.certificatController = new CertificatControllerImpl(certificateView);
+
+        // ✅ Module Situations Financières
         this.financialSituationView = new FinancialSituationView();
+        this.situationFinanciereController = new SituationFinanciereControllerImpl(financialSituationView);
     }
 
     private void setupMainLayout() {
@@ -161,26 +213,43 @@ public class MainFrame extends JFrame {
                     }
                     break;
 
+                case "Consultation":
+                    if (consultationController != null) {
+                        // Le controller gère déjà ses propres événements
+                        System.out.println("[NAV] Module Consultation activé.");
+                    }
+                    break;
+
                 case "Patients":
-                    // Optionnel : On peut ici déclencher un rafraîchissement de la liste SQL
+                    if (patientController != null) {
+                        patientController.refreshView();
+                    }
                     break;
 
                 case "Actes et Soins":
-                    // Logique pour s'assurer qu'un patient est bien sélectionné avant d'afficher
+                    if (acteController != null) {
+                        acteController.refreshView();
+                    }
                     System.out.println("[SOINS] Chargement de l'interface d'interventions.");
                     break;
 
                 case "Dossiers Médicaux":
-                    // Logique d'audit ou de log si nécessaire
+                    // Le controller gère ses propres événements
                     break;
+
                 case "Ordonnances":
                     System.out.println("[NAV] Module Ordonnances activé.");
-                    // Ici vous pourrez rafraîchir les données du patient en cours
                     break;
+
                 case "Certificats Médicaux":
                     System.out.println("[NAV] Accès au module Certificats.");
                     break;
+
                 case "Situations Financières":
+                    if (situationFinanciereController != null) {
+                        // TODO: Passer l'ID du dossier si nécessaire
+                        // situationFinanciereController.refreshView(dossierId);
+                    }
                     System.out.println("[FINANCE] Chargement de l'état financier du patient.");
                     break;
                 default:

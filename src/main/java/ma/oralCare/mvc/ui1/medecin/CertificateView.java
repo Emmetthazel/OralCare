@@ -28,9 +28,9 @@ public class CertificateView extends JPanel {
         // --- ENTÊTE (Infos Patient issues de la consultation en cours) ---
         JPanel headerPanel = new JPanel(new GridLayout(1, 3, 10, 10));
         headerPanel.setOpaque(false);
-        headerPanel.add(new JLabel("<html>👤 Patient : <b>Sara K.</b></html>"));
-        headerPanel.add(new JLabel("<html>📅 Consultation : <b>Contrôle</b></html>"));
-        headerPanel.add(new JLabel("<html>Statut : <span style='color:green;'>EN COURS</span></html>"));
+        headerPanel.add(new JLabel("<html>👤 Patient : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>📅 Consultation : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>Statut : <span style='color:green;'>-</span></html>"));
         add(headerPanel, BorderLayout.NORTH);
 
         // --- CENTRE : LISTE ET ACTIONS ---
@@ -87,17 +87,6 @@ public class CertificateView extends JPanel {
         mainContent.add(infoPanel, BorderLayout.SOUTH);
 
         add(mainContent, BorderLayout.CENTER);
-
-        loadMockData();
-    }
-
-    private void loadMockData() {
-        certModel.addRow(new Object[]{"01", "08/01/2026", "15/01/2026", "Dr. Amine", "Maladie", "▶ Voir"});
-        certModel.addRow(new Object[]{"02", "02/01/2026", "05/01/2026", "Dr. Amine", "Travail", "▶ Voir"});
-
-        // Simulation de sélection
-        lblDetails.setText("<html><b>Patient :</b> Sara K.<br><b>Période :</b> du 08/01 au 15/01<br><b>Type :</b> Maladie</html>");
-        txtNoteMedecin.setText("\"Repos total 7 jours, éviter efforts physiques\"");
     }
 
     private JPanel createStyledPanel(String title) {

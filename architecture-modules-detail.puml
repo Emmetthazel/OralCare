@@ -1,0 +1,186 @@
+@startuml Architecture des Modules - Détail
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title Architecture des Modules par Domaine Fonctionnel
+
+package "Modules Fonctionnels" {
+    
+    ' ============================================
+    ' MODULE PATIENT
+    ' ============================================
+    package "Module Patient" #FFE0B2 {
+        package "entities.patient" {
+            [Patient]
+            [Antecedent]
+        }
+        package "repository.modules.patient" {
+            interface "PatientRepository"
+            interface "AntecedentRepository"
+            class "PatientRepositoryImpl"
+            class "AntecedentRepositoryImpl"
+        }
+        package "service.modules.patient" {
+            interface "PatientService"
+            class "PatientServiceImpl"
+        }
+        package "mvc.controllers.patient" {
+            interface "PatientController"
+            class "PatientControllerImpl"
+        }
+        package "mvc.ui1.medecin" {
+            [PatientListView]
+        }
+        
+        [Patient] --> PatientRepository
+        PatientRepositoryImpl ..|> PatientRepository
+        PatientService --> PatientRepository
+        PatientServiceImpl ..|> PatientService
+        PatientServiceImpl --> PatientRepositoryImpl
+        PatientController --> PatientService
+        PatientControllerImpl ..|> PatientController
+        PatientControllerImpl --> PatientServiceImpl
+        [PatientListView] --> PatientControllerImpl
+    }
+    
+    ' ============================================
+    ' MODULE CONSULTATION
+    ' ============================================
+    package "Module Consultation" #C5E1A5 {
+        package "entities.dossierMedical" {
+            [Consultation]
+            [DossierMedicale]
+        }
+        package "repository.modules.dossierMedical" {
+            interface "ConsultationRepository"
+            interface "DossierMedicaleRepository"
+            class "ConsultationRepositoryImpl"
+            class "DossierMedicaleRepositoryImpl"
+        }
+        package "service.modules.consultation" {
+            interface "ConsultationService"
+            class "ConsultationServiceImpl"
+        }
+        package "mvc.controllers.consultation" {
+            interface "ConsultationController"
+            class "ConsultationControllerImpl"
+        }
+        package "mvc.ui1.medecin" {
+            [ConsultationPanel]
+        }
+        
+        [Consultation] --> ConsultationRepository
+        ConsultationRepositoryImpl ..|> ConsultationRepository
+        ConsultationService --> ConsultationRepository
+        ConsultationServiceImpl ..|> ConsultationService
+        ConsultationServiceImpl --> ConsultationRepositoryImpl
+        ConsultationController --> ConsultationService
+        ConsultationControllerImpl ..|> ConsultationController
+        ConsultationControllerImpl --> ConsultationServiceImpl
+        [ConsultationPanel] --> ConsultationControllerImpl
+    }
+    
+    ' ============================================
+    ' MODULE RDV
+    ' ============================================
+    package "Module Rendez-vous" #B3E5FC {
+        package "entities.agenda" {
+            [RDV]
+            [AgendaMensuel]
+        }
+        package "repository.modules.agenda" {
+            interface "RDVRepository"
+            class "RDVRepositoryImpl"
+        }
+        package "service.modules.RDV" {
+            interface "RDVService"
+            class "RDVServiceImpl"
+        }
+        package "mvc.controllers.RDV" {
+            interface "RDVController"
+            class "RDVControllerImpl"
+        }
+        package "mvc.ui1.medecin" {
+            [RDVPanel]
+        }
+        
+        [RDV] --> RDVRepository
+        RDVRepositoryImpl ..|> RDVRepository
+        RDVService --> RDVRepository
+        RDVServiceImpl ..|> RDVService
+        RDVServiceImpl --> RDVRepositoryImpl
+        RDVController --> RDVService
+        RDVControllerImpl ..|> RDVController
+        RDVControllerImpl --> RDVServiceImpl
+        [RDVPanel] --> RDVControllerImpl
+    }
+    
+    ' ============================================
+    ' MODULE DOSSIER MÉDICAL
+    ' ============================================
+    package "Module Dossier Médical" #F8BBD0 {
+        package "entities.dossierMedical" {
+            [DossierMedicale]
+            [Ordonnance]
+            [Certificat]
+            [InterventionMedecin]
+        }
+        package "repository.modules.dossierMedical" {
+            interface "DossierMedicaleRepository"
+            interface "OrdonnanceRepository"
+            interface "CertificatRepository"
+            interface "InterventionMedecinRepository"
+        }
+        package "service.modules" {
+            interface "DossierMedicaleService"
+            interface "OrdonnanceService"
+            interface "CertificatService"
+            interface "InterventionMedecinService"
+        }
+        package "mvc.controllers" {
+            interface "DossierMedicaleController"
+            interface "OrdonnanceController"
+            interface "CertificatController"
+            interface "InterventionMedecinController"
+        }
+        package "mvc.ui1.medecin" {
+            [MedicalRecordDetailView]
+            [PrescriptionView]
+            [CertificateView]
+            [TreatmentView]
+        }
+    }
+    
+    ' ============================================
+    ' MODULE AUTHENTIFICATION
+    ' ============================================
+    package "Module Authentification" #E1BEE7 {
+        package "service.modules.auth" {
+            interface "AuthService"
+            interface "AuthorizationService"
+            class "AuthServiceImpl"
+        }
+        package "mvc.controllers.auth" {
+            class "AuthController"
+        }
+        package "mvc.ui.auth" {
+            [LoginFrame]
+        }
+        
+        AuthService --> "entities.users.Utilisateur"
+        AuthServiceImpl ..|> AuthService
+        AuthController --> AuthService
+        [LoginFrame] --> AuthController
+    }
+}
+
+note right of "Module Patient"
+  **Structure Modulaire**
+  - Séparation claire des responsabilités
+  - Chaque module suit le pattern :
+    Entities → Repository → Service → Controller → UI
+end note
+
+@enduml

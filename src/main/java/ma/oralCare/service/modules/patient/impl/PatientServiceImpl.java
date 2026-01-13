@@ -1,4 +1,4 @@
-/*package ma.oralCare.service.modules.patient.impl;
+package ma.oralCare.service.modules.patient.impl;
 
 import ma.oralCare.entities.patient.Antecedent;
 import ma.oralCare.entities.patient.Patient;
@@ -140,5 +140,3 @@ public class PatientServiceImpl implements PatientService {
     }
 }
 
-
-*/

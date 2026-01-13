@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.*;
+import javax.swing.DefaultListModel;
 
 /**
  * Dashboard dédié à la secrétaire.
@@ -97,8 +98,100 @@ public class DashboardSecretairePanel extends JPanel {
                         "JOIN Patient p ON d.patient_id = p.id_entite " +
                         "WHERE r.statut = 'PENDING' AND r.date < CURDATE() LIMIT 6");
 
+        // Widget File d'Attente
+        addFileAttenteWidget();
+
+        // Widget Notifications
+        addNotificationsWidget();
+
         gridPanel.revalidate();
         gridPanel.repaint();
+    }
+
+    private void addFileAttenteWidget() {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(COLOR_CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 230), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+
+        JLabel lblTitle = new JLabel("⏳ File d'Attente");
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        lblTitle.setForeground(COLOR_PRIMARY);
+        lblTitle.setBorder(new EmptyBorder(0, 0, 10, 0));
+        card.add(lblTitle, BorderLayout.NORTH);
+
+        DefaultListModel<String> model = new DefaultListModel<>();
+        try (Connection conn = SessionFactory.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(
+                     "SELECT p.nom, r.heure FROM RDV r " +
+                             "JOIN DossierMedicale d ON r.dossier_medicale_id = d.id_entite " +
+                             "JOIN Patient p ON d.patient_id = p.id_entite " +
+                             "WHERE r.date = CURDATE() AND r.statut = 'CONFIRMED' " +
+                             "AND NOT EXISTS (SELECT 1 FROM Consultation c WHERE c.dossier_medicale_id = d.id_entite AND c.date = CURDATE()) " +
+                             "ORDER BY r.heure ASC LIMIT 5")) {
+            while (rs.next()) {
+                model.addElement(" • " + rs.getString("nom") + " [" + rs.getTime("heure") + "]");
+            }
+            if (model.isEmpty()) model.addElement("Aucun patient en attente");
+        } catch (SQLException e) {
+            model.addElement("Erreur de chargement");
+        }
+
+        JList<String> list = new JList<>(model);
+        list.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        card.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JButton btnGo = new JButton("Gérer →");
+        btnGo.addActionListener(e -> mainFrame.showView("FILE_ATTENTE"));
+        card.add(btnGo, BorderLayout.SOUTH);
+
+        gridPanel.add(card);
+    }
+
+    private void addNotificationsWidget() {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(COLOR_CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 230), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+
+        JLabel lblTitle = new JLabel("🔔 Notifications");
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        lblTitle.setForeground(COLOR_PRIMARY);
+        lblTitle.setBorder(new EmptyBorder(0, 0, 10, 0));
+        card.add(lblTitle, BorderLayout.NORTH);
+
+        DefaultListModel<String> model = new DefaultListModel<>();
+        try (Connection conn = SessionFactory.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(
+                    "SELECT n.titre, n.type, COALESCE(nu.est_lu, FALSE) as lue " +
+                            "FROM Notification n " +
+                            "LEFT JOIN notification_utilisateur nu ON n.id_entite = nu.notification_id " +
+                            "WHERE COALESCE(nu.est_lu, FALSE) = FALSE " +
+                            "ORDER BY n.date DESC, n.time DESC LIMIT 5")) {
+            while (rs.next()) {
+                String icon = rs.getBoolean("lue") ? "✓" : "●";
+                model.addElement(icon + " [" + rs.getString("type") + "] " + rs.getString("titre"));
+            }
+            if (model.isEmpty()) model.addElement("Aucune notification");
+        } catch (SQLException e) {
+            model.addElement("Erreur de chargement");
+        }
+
+        JList<String> list = new JList<>(model);
+        list.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        card.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JButton btnGo = new JButton("Voir tout →");
+        btnGo.addActionListener(e -> mainFrame.showView("NOTIFICATIONS"));
+        card.add(btnGo, BorderLayout.SOUTH);
+
+        gridPanel.add(card);
     }
 
     private void addStatCard(String title, String value, String icon, Color color, String targetView) {

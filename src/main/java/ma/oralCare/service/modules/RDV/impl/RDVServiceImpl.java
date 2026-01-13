@@ -1,4 +1,4 @@
-/*package ma.oralCare.service.modules.RDV.impl;
+package ma.oralCare.service.modules.RDV.impl;
 
 import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.entities.agenda.RDV;
@@ -110,4 +110,3 @@ public class RDVServiceImpl implements RDVService {
         rdvRepo.updateStatut(rdvId, StatutRDV.CANCELLED);
     }
 }
-*/

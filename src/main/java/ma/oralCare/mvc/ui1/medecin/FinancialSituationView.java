@@ -29,9 +29,9 @@ public class FinancialSituationView extends JPanel {
         // --- ENTÊTE ---
         JPanel headerPanel = new JPanel(new GridLayout(1, 3, 10, 10));
         headerPanel.setOpaque(false);
-        headerPanel.add(new JLabel("<html>👤 Patient : <b>Sara K.</b></html>"));
-        headerPanel.add(new JLabel("<html>📅 Consultation : <b>Contrôle</b></html>"));
-        headerPanel.add(new JLabel("<html>Statut : <span style='color:orange;'>EN COURS</span></html>"));
+        headerPanel.add(new JLabel("<html>👤 Patient : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>📅 Consultation : <b>-</b></html>"));
+        headerPanel.add(new JLabel("<html>Statut : <span style='color:orange;'>-</span></html>"));
         add(headerPanel, BorderLayout.NORTH);
 
         // --- CENTRE : LISTE DES SITUATIONS ---
@@ -59,7 +59,7 @@ public class FinancialSituationView extends JPanel {
         // 2. Détails & Factures Liées
         JPanel detailPanel = createStyledPanel("Détail Situation Financière & Factures");
 
-        lblSummary = new JLabel("<html><b>Résumé sélection :</b> Total 1000 DH | Payé 500 DH | <span style='color:red;'>Reste 500 DH</span></html>");
+        lblSummary = new JLabel("<html><b>Résumé sélection :</b> -</html>");
         lblSummary.setBorder(new EmptyBorder(0, 0, 10, 0));
         detailPanel.add(lblSummary, BorderLayout.NORTH);
 
@@ -71,15 +71,6 @@ public class FinancialSituationView extends JPanel {
         centerPanel.add(listPanel);
         centerPanel.add(detailPanel);
         add(centerPanel, BorderLayout.CENTER);
-
-        loadMockData();
-    }
-
-    private void loadMockData() {
-        situationModel.addRow(new Object[]{"01", "08/01/2026", "1000.00 DH", "500.00 DH", "500.00 DH", "PENDING", "▶ Voir"});
-        situationModel.addRow(new Object[]{"02", "02/01/2026", "500.00 DH", "500.00 DH", "0.00 DH", "PAID", "▶ Voir"});
-
-        factureModel.addRow(new Object[]{"FAC-2026-001", "08/01/2026", "1000.00", "500.00", "500.00"});
     }
 
     private JPanel createStyledPanel(String title) {

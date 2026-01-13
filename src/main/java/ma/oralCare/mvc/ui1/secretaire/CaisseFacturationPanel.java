@@ -2,6 +2,7 @@ package ma.oralCare.mvc.ui1.secretaire;
 
 import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.mvc.ui1.MainFrame;
+import ma.oralCare.mvc.utils.StatutTranslator;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.DocumentEvent;
@@ -117,9 +118,16 @@ public class CaisseFacturationPanel extends JPanel {
         });
         btnAnnuler.addActionListener(e -> deleteSelectedFacture());
 
+        JButton btnExport = createStyledButton("📄 Exporter Rapport", new Color(39, 174, 96));
+        btnExport.addActionListener(e -> {
+            new ma.oralCare.mvc.ui1.secretaire.dialog.ExportRapportDialog(mainFrame, "CAISSE").setVisible(true);
+        });
+
         southPanel.add(btnNouvelle);
         southPanel.add(btnModifier);
         southPanel.add(btnAnnuler);
+        southPanel.add(new JSeparator(JSeparator.VERTICAL));
+        southPanel.add(btnExport);
         add(southPanel, BorderLayout.SOUTH);
     }
 
@@ -153,7 +161,7 @@ public class CaisseFacturationPanel extends JPanel {
                 row.add(rs.getDouble("totale_facture"));
                 row.add(rs.getDouble("totale_paye"));
                 row.add(rs.getDouble("reste"));
-                row.add(rs.getString("statut"));
+                row.add(StatutTranslator.traduireStatutPaiement(rs.getString("statut"))); // Statut traduit
                 row.add(rs.getTimestamp("date_facture"));
                 tableModel.addRow(row);
             }

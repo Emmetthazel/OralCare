@@ -29,9 +29,9 @@ public class TreatmentView extends JPanel {
         headerPanel.setOpaque(false);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(210, 210, 210)));
 
-        headerPanel.add(createHeaderLabel("👤 Patient : <b>Sara K.</b>", "⏰ 10:00"));
-        headerPanel.add(createHeaderLabel("🦷 Consultation : <b>Contrôle</b>", ""));
-        headerPanel.add(createHeaderLabel("Statut : <span style='color:orange;'>EN COURS</span>", ""));
+        headerPanel.add(createHeaderLabel("👤 Patient : <b>-</b>", "⏰ -"));
+        headerPanel.add(createHeaderLabel("🦷 Consultation : <b>-</b>", ""));
+        headerPanel.add(createHeaderLabel("Statut : <span style='color:orange;'>-</span>", ""));
 
         add(headerPanel, BorderLayout.NORTH);
 
@@ -47,8 +47,6 @@ public class TreatmentView extends JPanel {
         tableModel = new DefaultTableModel(columns, 0);
         tableInterventions = new JTable(tableModel);
         tableInterventions.setRowHeight(35);
-
-        loadMockData();
 
         JScrollPane scrollPane = new JScrollPane(tableInterventions);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
@@ -93,9 +91,9 @@ public class TreatmentView extends JPanel {
                 BorderFactory.createLineBorder(new Color(220, 220, 220)),
                 new EmptyBorder(15, 15, 15, 15)));
 
-        lblTotal = new JLabel("Total actes : 1000 DH");
-        lblPaye = new JLabel("Payé : 500 DH");
-        lblReste = new JLabel("Reste : 500 DH");
+        lblTotal = new JLabel("Total actes : 0 DH");
+        lblPaye = new JLabel("Payé : 0 DH");
+        lblReste = new JLabel("Reste : 0 DH");
 
         JPanel labelsPanel = new JPanel(new GridLayout(3, 1, 5, 5));
         labelsPanel.setOpaque(false);
@@ -119,12 +117,6 @@ public class TreatmentView extends JPanel {
         JLabel label = new JLabel("<html>" + mainText + " &nbsp;&nbsp; <small style='color:gray;'>" + subText + "</small></html>");
         label.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         return label;
-    }
-
-    private void loadMockData() {
-        tableModel.addRow(new Object[]{"14", "Détartrage", "300", "Terminé", "100%"});
-        tableModel.addRow(new Object[]{"16", "Extraction", "500", "En cours", "60%"});
-        tableModel.addRow(new Object[]{"24", "Composite", "200", "À faire", "0%"});
     }
 
     private void stylePrimaryButton(JButton b) {

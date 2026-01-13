@@ -48,6 +48,41 @@ public class DossierMedicalPanel extends JPanel {
         setupCenterPanel();
         setupSearchLogic();
     }
+    
+    /**
+     * Méthode pour charger un patient spécifique depuis l'extérieur
+     * @param patientId L'ID du patient à charger
+     * @param patientName Le nom du patient pour l'affichage
+     */
+    public void loadPatientFromSelection(Long patientId, String patientName) {
+        this.currentPatientId = patientId;
+        
+        // Mettre à jour le champ de recherche avec le nom du patient
+        searchField.setText(patientName);
+        
+        // Charger les informations du patient
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Obtenir la connexion et charger les informations
+                try (Connection conn = SessionFactory.getInstance().getConnection()) {
+                    loadPatientInfo(conn);
+                    loadDossierId(conn);
+                    if (currentDossierId != null) {
+                        loadRDVs(conn);
+                        loadInterventions(conn);
+                        loadFactures(conn);
+                        loadPrescriptions(conn);
+                        loadAntecedents(conn);
+                        loadCertificats(conn);
+                    }
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, 
+                    "Erreur lors du chargement du dossier : " + e.getMessage(), 
+                    "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
 
     // --- INTERFACE ---
 

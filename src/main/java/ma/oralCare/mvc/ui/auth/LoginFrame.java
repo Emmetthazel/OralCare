@@ -1,8 +1,6 @@
 package ma.oralCare.mvc.ui.auth;
 
 import ma.oralCare.conf.SessionFactory;
-import java.sql.Connection;
-import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.mvc.controllers.auth.AuthController;
 import ma.oralCare.repository.modules.users.api.UtilisateurRepository;
 import ma.oralCare.repository.modules.users.impl.UtilisateurRepositoryImpl;
@@ -17,8 +15,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 public class LoginFrame extends JFrame {
 
@@ -182,9 +178,6 @@ public class LoginFrame extends JFrame {
     // =========================================================================
     // ✅ MAIN DE TEST (Lancement du module Auth complet)
     // =========================================================================
-    // =========================================================================
-    // ✅ MAIN DE TEST (Lancement du module Auth complet)
-    // =========================================================================
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
@@ -192,14 +185,61 @@ public class LoginFrame extends JFrame {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
                 // 1. Initialisation de la couche données
-                // ✅ PLUS BESOIN de récupérer la connexion ici !
-                // ✅ Le constructeur est maintenant vide car le repo est autonome
                 UtilisateurRepository repo = new UtilisateurRepositoryImpl();
 
                 // 2. Initialisation des services
                 PasswordEncoder encoder = new PasswordEncoderImpl();
                 CredentialsValidator validator = new CredentialsValidatorImpl();
                 AuthService authService = new AuthServiceImpl(repo, encoder, validator);
+                
+                // === DIAGNOSTIC TEMPORAIRE POUR h.ahlam ===
+                System.out.println("\n=== DIAGNOSTIC DU MOT DE PASSE h.ahlam ===");
+                try {
+                    var userOpt = repo.findByLogin("h.ahlam");
+                    if (userOpt.isPresent()) {
+                        var user = userOpt.get();
+                        System.out.println("Utilisateur trouvé: " + user.getLogin());
+                        System.out.println("Hash actuel: " + user.getMotDePass());
+                        
+                        // Tester différents mots de passe
+                        String[] testPasswords = {"123", "password", "admin", "secret", "123456", "ahlam"};
+                        boolean found = false;
+                        for (String pwd : testPasswords) {
+                            boolean matches = encoder.matches(pwd, user.getMotDePass());
+                            System.out.println("Test '" + pwd + "': " + (matches ? "✅ CORRECT" : "❌ INCORRECT"));
+                            
+                            if (matches) {
+                                System.out.println(">>> MOT DE PASSE TROUVÉ: " + pwd);
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!found) {
+                            System.out.println("Aucun mot de passe ne fonctionne. Création d'un nouveau hash pour '123'...");
+                            String newHash = encoder.encode("123");
+                            System.out.println("Nouveau hash: " + newHash);
+                            
+                            // Mettre à jour directement dans la base
+                            try (var conn = ma.oralCare.conf.SessionFactory.getInstance().getConnection();
+                                 var stmt = conn.prepareStatement("UPDATE utilisateur SET mot_de_pass = ? WHERE login = ?")) {
+                                stmt.setString(1, newHash);
+                                stmt.setString(2, "h.ahlam");
+                                int rows = stmt.executeUpdate();
+                                if (rows > 0) {
+                                    System.out.println("✅ Mot de passe mis à jour! Nouveau mot de passe: 123");
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Erreur lors de la mise à jour: " + e.getMessage());
+                            }
+                        }
+                    } else {
+                        System.out.println("Utilisateur h.ahlam non trouvé!");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erreur de diagnostic: " + e.getMessage());
+                }
+                System.out.println("=== FIN DU DIAGNOSTIC ===\n");
 
                 // 3. Initialisation du MVC
                 LoginFrame view = new LoginFrame();

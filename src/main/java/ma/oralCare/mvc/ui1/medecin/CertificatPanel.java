@@ -27,7 +27,6 @@ public class CertificatPanel extends JPanel {
         add(createSearchBar(), BorderLayout.NORTH);
         add(createMainContent(), BorderLayout.CENTER);
 
-        loadMockData();
         enableSearchFilter();   // Activation du filtrage
     }
 
@@ -96,7 +95,8 @@ public class CertificatPanel extends JPanel {
                 lblDate.setText(model.getValueAt(modelRow,0).toString());
                 lblMotif.setText(model.getValueAt(modelRow,1).toString());
                 lblDuree.setText(model.getValueAt(modelRow,2).toString());
-                areaNotes.setText("Repos obligatoire.\nÉviter les efforts.\nContrôle dans 5 jours.");
+                // Les notes seront récupérées depuis la base de données via le controller/service
+                areaNotes.setText("");
             }
         });
 
@@ -125,11 +125,4 @@ public class CertificatPanel extends JPanel {
         });
     }
 
-    // ================= DATA =================
-
-    private void loadMockData(){
-        model.addRow(new Object[]{"07/01/2026", "Douleur molaire", "5 jours"});
-        model.addRow(new Object[]{"20/12/2025", "Extraction dent", "3 jours"});
-        model.addRow(new Object[]{"15/11/2025", "Infection gencive", "4 jours"});
-    }
 }

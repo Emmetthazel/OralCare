@@ -21,8 +21,6 @@ import java.time.LocalTime;
 
 public class RDV extends BaseEntity {
 
-    private Long id;
-
     private LocalDate date;
 
     private LocalTime heure;
@@ -42,26 +40,26 @@ public class RDV extends BaseEntity {
         if (this == o) return true;
         if (!(o instanceof RDV)) return false;
         RDV that = (RDV) o;
-        return id != null && id.equals(that.id);
+        return getIdEntite() != null && getIdEntite().equals(that.getIdEntite());
     }
 
     @Override
     public int hashCode() {
-        return id != null ? id.hashCode() : 0;
+        return getIdEntite() != null ? getIdEntite().hashCode() : 0;
     }
 
     @Override
     public String toString() {
         return """
-        RDV {
-          id = %d,
-          date = %s,
-          heure = %s,
-          motif = '%s',
-          statut = %s
-        }
-        """.formatted(
-                id,
+                RDV {
+                  id = %d,
+                  date = %s,
+                  heure = %s,
+                  motif = '%s',
+                  statut = %s
+                }
+                """.formatted(
+                getIdEntite(),
                 date,
                 heure,
                 motif,
@@ -77,5 +75,19 @@ public class RDV extends BaseEntity {
             return nom.toUpperCase() + " " + prenom;
         }
         return "Patient Inconnu";
+    }
+
+    public String getPatientNom() {
+        if (this.dossierMedicale != null && this.dossierMedicale.getPatient() != null) {
+            return this.dossierMedicale.getPatient().getNom();
+        }
+        return "Patient Inconnu";
+    }
+
+    public String getMedecinNom() {
+        if (this.dossierMedicale != null && this.dossierMedicale.getMedecin() != null) {
+            return this.dossierMedicale.getMedecin().getNom();
+        }
+        return "Médecin Inconnu";
     }
 }

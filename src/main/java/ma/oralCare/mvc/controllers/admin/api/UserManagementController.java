@@ -15,7 +15,9 @@ public interface UserManagementController {
     String generateAndSaveNewPassword(String email);
     // ACTION : Ouvre la popup de confirmation et affiche le nouveau MDP
     void updateUser(String email, String nom, String prenom, String tel, String cin, String ville);
-    String addNewUser(String cabinetName, String role, Map<String, String> data);
+    String addNewUser(String cabinetName, String role, Map<String, String> data) throws Exception;
     String resetPassword(String email);
     void addNewCabinet(Map<String, String> data) throws Exception;
+    // Nouvelle méthode pour obtenir le mot de passe en clair
+    String getUserPassword(String email);
 }

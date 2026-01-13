@@ -158,7 +158,7 @@ public class FactureRepositoryImpl implements FactureRepository {
                 stmt.setBigDecimal(2, entity.getTotaleFacture());
                 stmt.setBigDecimal(3, entity.getTotalePaye());
                 stmt.setBigDecimal(4, entity.getReste());
-                stmt.setString(5, entity.getStatut().name()); // Statut NOT NULL
+                stmt.setString(5, entity.getStatut()); // Statut NOT NULL (déjà un String grâce à getStatut())
                 stmt.setTimestamp(6, Timestamp.valueOf(entity.getDateFacture())); // Date NOT NULL
 
                 stmt.setObject(7, entity.getConsultation() != null ? entity.getConsultation().getIdEntite() : null, Types.BIGINT); // NULLABLE UNIQUE
@@ -200,7 +200,7 @@ public class FactureRepositoryImpl implements FactureRepository {
                 stmt.setBigDecimal(1, entity.getTotaleFacture());
                 stmt.setBigDecimal(2, entity.getTotalePaye());
                 stmt.setBigDecimal(3, entity.getReste());
-                stmt.setString(4, entity.getStatut().name());
+                stmt.setString(4, entity.getStatut());
                 stmt.setTimestamp(5, Timestamp.valueOf(entity.getDateFacture()));
 
                 stmt.setObject(6, entity.getConsultation() != null ? entity.getConsultation().getIdEntite() : null, Types.BIGINT);
@@ -304,17 +304,14 @@ public class FactureRepositoryImpl implements FactureRepository {
             throw new IllegalArgumentException("L'ID de la facture et le montant payé doivent être valides.");
         }
 
-        Facture facture = findById(factureId)
-                .orElseThrow(() -> new RuntimeException("Facture non trouvée pour l'ID: " + factureId));
-
-        if (facture.getStatut() == StatutFacture.PAID || facture.getStatut() == StatutFacture.CANCELLED) {
-            throw new IllegalStateException("Le paiement ne peut pas être enregistré pour une facture déjà " + facture.getStatut().name());
-        }
-
         Connection conn = null;
         try {
             conn = sessionFactory.getConnection();
             conn.setAutoCommit(false);
+
+            // Récupérer la facture existante
+            Facture facture = findById(factureId)
+                    .orElseThrow(() -> new RuntimeException("Facture non trouvée pour l'ID: " + factureId));
 
             // Calcul du nouveau statut
             BigDecimal montant = BigDecimal.valueOf(montantPaye);
@@ -380,7 +377,7 @@ public class FactureRepositoryImpl implements FactureRepository {
 
         // Détermination du statut basé sur le nouveau reste
         StatutFacture nouveauStatut = StatutFacture.PENDING;
-        if (nouveauReste.compareTo(0.0) <= 0) {
+        if (BigDecimal.valueOf(nouveauReste).compareTo(BigDecimal.ZERO) <= 0) {
             nouveauStatut = StatutFacture.PAID;
         }
 

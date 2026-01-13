@@ -79,8 +79,7 @@ public class MedicalRecordDetailView extends JPanel {
 
                 "<h2>⚠️ Antécédents Médicaux</h2>" +
                 "<ul style='margin-left: 15px;'>" +
-                "<li><b>Diabète</b> <small>(Risque: HIGH)</small></li>" +
-                "<li><b>Allergie Pénicilline</b> <small>(Risque: MEDIUM)</small></li>" +
+                "<li>Aucun antécédent enregistré</li>" +
                 "</ul>" +
 
                 "<div style='margin: 15px 0; border-top: 1px solid #eeeeee;'></div>" +

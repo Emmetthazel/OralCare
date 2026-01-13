@@ -16,4 +16,6 @@ public interface UserManagementService {
     String generateAndSaveNewPassword(String email);
     void updateUserBasicInfo(String email, String nom, String prenom, String tel, String cin, String ville);
     String createStaffMember(String cabinetName, String role, Map<String, String> data);
+    // Ajout de la méthode findByEmail
+    Utilisateur findByEmail(String email);
 }

@@ -1,0 +1,369 @@
+@startuml Architecture Modulaire OralCare
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+title Architecture Modulaire - Application OralCare\nGestion de Cabinet Dentaire
+
+package "ma.oralCare" {
+    
+    ' ============================================
+    ' COUCHE ENTITIES (Modèles de données)
+    ' ============================================
+    package "entities" #LightBlue {
+        package "base" {
+            class BaseEntity
+            class Adresse
+        }
+        package "patient" {
+            class Patient
+            class Antecedent
+        }
+        package "users" {
+            class Utilisateur
+            class Medecin
+            class Secretaire
+            class Admin
+            class Staff
+            class Role
+            class Notification
+        }
+        package "agenda" {
+            class RDV
+            class AgendaMensuel
+        }
+        package "dossierMedical" {
+            class DossierMedicale
+            class Consultation
+            class Ordonnance
+            class Prescription
+            class Certificat
+            class InterventionMedecin
+            class Acte
+            class Medicament
+            class Facture
+            class SituationFinanciere
+        }
+        package "cabinet" {
+            class CabinetMedicale
+            class Statistiques
+            class Revenues
+            class Charges
+        }
+        package "system" {
+            class LogAudit
+            class SystemConfig
+        }
+        package "enums" {
+            enum StatutConsultation
+            enum StatutRDV
+            enum StatutFacture
+            enum RoleLibelle
+            enum Assurance
+        }
+    }
+    
+    ' ============================================
+    ' COUCHE REPOSITORY (Accès aux données)
+    ' ============================================
+    package "repository" #LightGreen {
+        package "common" {
+            interface CrudRepository<T, ID>
+            class RowMappers
+        }
+        package "modules" {
+            package "patient" {
+                interface PatientRepository
+                interface AntecedentRepository
+                class PatientRepositoryImpl
+                class AntecedentRepositoryImpl
+            }
+            package "users" {
+                interface UtilisateurRepository
+                interface MedecinRepository
+                interface SecretaireRepository
+                interface AdminRepository
+                class UtilisateurRepositoryImpl
+            }
+            package "agenda" {
+                interface RDVRepository
+                interface AgendaMensuelRepository
+                class RDVRepositoryImpl
+            }
+            package "dossierMedical" {
+                interface DossierMedicaleRepository
+                interface ConsultationRepository
+                interface OrdonnanceRepository
+                interface CertificatRepository
+                interface InterventionMedecinRepository
+                interface ActeRepository
+                interface PrescriptionRepository
+                interface MedicamentRepository
+                interface SituationFinanciereRepository
+            }
+            package "cabinet" {
+                interface CabinetMedicaleRepository
+                interface StatistiquesRepository
+                interface RevenuesRepository
+                interface ChargesRepository
+            }
+            package "caisse" {
+                interface FactureRepository
+            }
+            package "system" {
+                interface LogRepository
+                interface SystemRepository
+            }
+        }
+    }
+    
+    ' ============================================
+    ' COUCHE SERVICE (Logique Métier)
+    ' ============================================
+    package "service" #LightYellow {
+        package "modules" {
+            package "auth" {
+                interface AuthService
+                interface AuthorizationService
+                interface PasswordEncoder
+                class AuthServiceImpl
+            }
+            package "patient" {
+                interface PatientService
+                interface AntecedentService
+                class PatientServiceImpl
+            }
+            package "users" {
+                interface UserManagementService
+                interface RoleManagementService
+                class UserManagementServiceImpl
+            }
+            package "consultation" {
+                interface ConsultationService
+                class ConsultationServiceImpl
+            }
+            package "dossier" {
+                interface DossierMedicaleService
+                class DossierMedicaleServiceImpl
+            }
+            package "ordonnance" {
+                interface OrdonnanceService
+                interface PrescriptionService
+                class OrdonnanceServiceImpl
+            }
+            package "certificat" {
+                interface CertificatService
+                class CertificatServiceImpl
+            }
+            package "intervention" {
+                interface InterventionMedecinService
+                class InterventionMedecinServiceImpl
+            }
+            package "acte" {
+                interface ActeService
+                class ActeServiceImpl
+            }
+            package "RDV" {
+                interface RDVService
+                class RDVServiceImpl
+            }
+            package "agenda" {
+                interface AgendaService
+                class AgendaServiceImpl
+            }
+            package "caisse" {
+                interface FactureService
+                interface SituationFinanciereService
+                class FactureServiceImpl
+                class SituationFinanciereServiceImpl
+            }
+            package "dashboard" {
+                interface DashboardService
+                class DashboardServiceImpl
+            }
+            package "admin" {
+                interface UserManagementService
+                interface SystemReferentielService
+                class UserManagementServiceImpl
+            }
+            package "cabinet" {
+                interface CabinetManagementService
+                class CabinetManagementServiceImpl
+            }
+        }
+    }
+    
+    ' ============================================
+    ' COUCHE MVC - CONTROLLERS
+    ' ============================================
+    package "mvc" #LightPink {
+        package "controllers" {
+            package "auth" {
+                class AuthController
+            }
+            package "patient" {
+                interface PatientController
+                class PatientControllerImpl
+            }
+            package "consultation" {
+                interface ConsultationController
+                class ConsultationControllerImpl
+            }
+            package "dossier" {
+                interface DossierMedicaleController
+                class DossierMedicaleControllerImpl
+            }
+            package "ordonnance" {
+                interface OrdonnanceController
+                class OrdonnanceControllerImpl
+            }
+            package "certificat" {
+                interface CertificatController
+                class CertificatControllerImpl
+            }
+            package "acte" {
+                interface ActeController
+                class ActeControllerImpl
+            }
+            package "intervention" {
+                interface InterventionMedecinController
+                class InterventionMedecinControllerImpl
+            }
+            package "situation" {
+                interface SituationFinanciereController
+                class SituationFinanciereControllerImpl
+            }
+            package "RDV" {
+                interface RDVController
+                class RDVControllerImpl
+            }
+            package "dashboard" {
+                interface DashboardController
+                class DashboardControllerImpl
+            }
+            package "admin" {
+                interface UserManagementController
+                interface AdminDashboardController
+                interface SystemReferentielController
+                class UserManagementControllerImpl
+                class AdminDashboardControllerImpl
+            }
+        }
+        
+        ' ============================================
+        ' COUCHE UI (Présentation)
+        ' ============================================
+        package "ui1" {
+            class MainFrame
+            class HeaderPanel
+            class FooterPanel
+            class SideBarPanel
+            package "medecin" {
+                class DashboardPanel
+                class RDVPanel
+                class ConsultationPanel
+                class PatientListView
+                class MedicalRecordDetailView
+                class TreatmentView
+                class PrescriptionView
+                class CertificateView
+                class FinancialSituationView
+            }
+            package "secretaire" {
+                class SecretaireDashboard
+                class AgendaPanel
+            }
+        }
+        
+        package "ui" {
+            package "auth" {
+                class LoginFrame
+            }
+            package "admin" {
+                class AdminDashboard
+                class UserListView
+            }
+        }
+    }
+    
+    ' ============================================
+    ' COUCHE CONFIGURATION
+    ' ============================================
+    package "conf" #LightGray {
+        class SessionFactory
+        class ApplicationContext
+    }
+}
+
+' ============================================
+' RELATIONS ENTRE LES COUCHES
+' ============================================
+
+' Entities vers Repository
+Patient --> PatientRepository
+Consultation --> ConsultationRepository
+RDV --> RDVRepository
+
+' Repository implémente les interfaces
+PatientRepositoryImpl ..|> PatientRepository
+PatientRepositoryImpl ..|> CrudRepository
+ConsultationRepositoryImpl ..|> ConsultationRepository
+RDVRepositoryImpl ..|> RDVRepository
+
+' Repository utilise RowMappers
+PatientRepositoryImpl --> RowMappers
+ConsultationRepositoryImpl --> RowMappers
+
+' Service utilise Repository
+PatientService --> PatientRepository
+ConsultationService --> ConsultationRepository
+ConsultationService --> DossierMedicaleRepository
+
+PatientServiceImpl ..|> PatientService
+ConsultationServiceImpl ..|> ConsultationService
+PatientServiceImpl --> PatientRepositoryImpl
+ConsultationServiceImpl --> ConsultationRepositoryImpl
+
+' Controller utilise Service
+PatientController --> PatientService
+ConsultationController --> ConsultationService
+DossierMedicaleController --> DossierMedicaleService
+
+PatientControllerImpl ..|> PatientController
+ConsultationControllerImpl ..|> ConsultationController
+PatientControllerImpl --> PatientServiceImpl
+ConsultationControllerImpl --> ConsultationServiceImpl
+
+' UI utilise Controller
+MainFrame --> PatientController
+MainFrame --> ConsultationController
+MainFrame --> RDVController
+MainFrame --> DashboardController
+
+ConsultationPanel --> ConsultationController
+PatientListView --> PatientController
+
+' Relations entre entités
+Patient --> DossierMedicale
+DossierMedicale --> Consultation
+Consultation --> Ordonnance
+Consultation --> Certificat
+Consultation --> InterventionMedecin
+InterventionMedecin --> Acte
+Ordonnance --> Prescription
+Prescription --> Medicament
+DossierMedicale --> Facture
+Patient --> SituationFinanciere
+RDV --> DossierMedicale
+RDV --> Consultation
+
+' Auth
+AuthController --> AuthService
+LoginFrame --> AuthController
+
+' Configuration
+SessionFactory --> "Database"
+RepositoryImpl --> SessionFactory
+
+@enduml

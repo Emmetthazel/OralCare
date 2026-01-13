@@ -19,12 +19,20 @@ public class ConsultationPanel extends JPanel {
     private JLabel lblPatientInfo;
     private JLabel lblHeure;
     private JLabel lblTotal, lblPaye, lblReste;
-    // ✅ Ajoutez ces getters dans ConsultationPanel.java
-    public JButton getBtnAddIntervention() { return (JButton) ((JPanel)getComponent(1)).getComponent(2); } // Selon votre structure
-    public JButton getBtnOrdonnance() { return (JButton) ((JPanel)((JPanel)getComponent(2)).getComponent(1)).getComponent(0); }
-    public JButton getBtnCertificat() { return (JButton) ((JPanel)((JPanel)getComponent(2)).getComponent(1)).getComponent(1); }
-    public JButton getBtnFacture() { return (JButton) ((JPanel)((JPanel)getComponent(2)).getComponent(1)).getComponent(2); }
-    public JButton getBtnFinish() { return (JButton) ((JPanel)((JPanel)getComponent(2)).getComponent(1)).getComponent(3); }
+    
+    // Boutons d'action
+    private JButton btnAddIntervention;
+    private JButton btnOrdonnance;
+    private JButton btnCertificat;
+    private JButton btnFacture;
+    private JButton btnFinish;
+    
+    // Getters pour les boutons
+    public JButton getBtnAddIntervention() { return btnAddIntervention; }
+    public JButton getBtnOrdonnance() { return btnOrdonnance; }
+    public JButton getBtnCertificat() { return btnCertificat; }
+    public JButton getBtnFacture() { return btnFacture; }
+    public JButton getBtnFinish() { return btnFinish; }
     public JTextArea getTxtObservations() { return txtObservations; }
 
     public ConsultationPanel() {
@@ -111,16 +119,16 @@ public class ConsultationPanel extends JPanel {
             tableActes.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        JButton btnAdd = new JButton("+ Ajouter Intervention");
-        btnAdd.setBackground(new Color(52, 152, 219));
-        btnAdd.setForeground(Color.WHITE);
-        btnAdd.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnAdd.setFocusPainted(false);
-        btnAdd.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAddIntervention = new JButton("+ Ajouter Intervention");
+        btnAddIntervention.setBackground(new Color(52, 152, 219));
+        btnAddIntervention.setForeground(Color.WHITE);
+        btnAddIntervention.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnAddIntervention.setFocusPainted(false);
+        btnAddIntervention.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         panel.add(title, BorderLayout.NORTH);
         panel.add(new JScrollPane(tableActes), BorderLayout.CENTER);
-        panel.add(btnAdd, BorderLayout.SOUTH);
+        panel.add(btnAddIntervention, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -168,13 +176,13 @@ public class ConsultationPanel extends JPanel {
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         actionPanel.setOpaque(false);
 
-        JButton btnOrd = createStyledButton("Ordonnance", new Color(52, 73, 94));
-        JButton btnCert = createStyledButton("Certificat", new Color(52, 73, 94));
-        JButton btnFacture = createStyledButton("Facture", new Color(52, 73, 94));
-        JButton btnFinish = createStyledButton("Terminer Consultation", new Color(46, 204, 113));
+        btnOrdonnance = createStyledButton("Ordonnance", new Color(52, 73, 94));
+        btnCertificat = createStyledButton("Certificat", new Color(52, 73, 94));
+        btnFacture = createStyledButton("Facture", new Color(52, 73, 94));
+        btnFinish = createStyledButton("Terminer Consultation", new Color(46, 204, 113));
 
-        actionPanel.add(btnOrd);
-        actionPanel.add(btnCert);
+        actionPanel.add(btnOrdonnance);
+        actionPanel.add(btnCertificat);
         actionPanel.add(btnFacture);
         actionPanel.add(btnFinish);
 

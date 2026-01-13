@@ -1,4 +1,4 @@
-/*package ma.oralCare.repository.modules.dossierMedical.api;
+package ma.oralCare.repository.modules.dossierMedical.api;
 
 import ma.oralCare.entities.dossierMedical.Consultation;
 import ma.oralCare.entities.enums.StatutConsultation;
@@ -34,4 +34,3 @@ public interface ConsultationRepository extends CrudRepository<Consultation, Lon
     void addIntervention(Long consultationId, InterventionMedecin intervention);
 
 }
-*/

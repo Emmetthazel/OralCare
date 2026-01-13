@@ -85,8 +85,6 @@ public class PatientListView extends JPanel {
         tablePatients.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         tablePatients.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        loadMockData();
-
         JScrollPane scrollPane = new JScrollPane(tablePatients);
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
@@ -134,14 +132,14 @@ public class PatientListView extends JPanel {
             if (row != -1) {
                 // Ces données proviendront normalement de vos objets DAO/Service
                 String nom = tableModel.getValueAt(row, 1).toString();
-                String cin = "AB12345"; // Colonne cin dans table Patient
+                String cin = ""; // Colonne cin dans table Patient
                 String assurance = tableModel.getValueAt(row, 4).toString(); // Enum CNOPS, CNSS, etc.
                 String sexe = tableModel.getValueAt(row, 3).toString(); // MALE, FEMALE
 
-                // Simulation des données de la table SituationFinanciere
-                double totalActes = 5000.00;
-                double totalPaye = 3200.00;
-                double credit = totalActes - totalPaye;
+                // Les données de la table SituationFinanciere seront récupérées depuis la base de données
+                double totalActes = 0.00;
+                double totalPaye = 0.00;
+                double credit = 0.00;
 
                 MainFrame topFrame = (MainFrame) SwingUtilities.getWindowAncestor(this);
                 topFrame.getMedicalRecordDetailView().loadPatientData(
@@ -165,7 +163,7 @@ public class PatientListView extends JPanel {
                             "<b>Patient:</b> " + nom + "<br>" +
                             "<b>Né(e) le:</b> " + dn + "<br>" +
                             "<b>Sexe:</b> " + sexe + "<br>" +
-                            "<b>Tél:</b> 06 00 00 00 00<br>" +
+                            "<b>Tél:</b> -<br>" +
                             "<b>Assurance:</b> " + ass +
                     "</html>";
 
@@ -176,12 +174,6 @@ public class PatientListView extends JPanel {
     }
 
 
-    private void loadMockData() {
-        tableModel.addRow(new Object[]{"01", "Sara K.", "26/04/1996", "F", "CNOPS", "Actif", "▶ Voir"});
-        tableModel.addRow(new Object[]{"02", "Amine H.", "15/11/1990", "M", "RMA", "Actif", "▶ Voir"});
-        tableModel.addRow(new Object[]{"03", "Lina A.", "08/08/2000", "F", "CNSS", "Inactif", "▶ Voir"});
-        tableModel.addRow(new Object[]{"04", "Yassine B.", "21/05/1995", "M", "CNOPS", "Actif", "▶ Voir"});
-    }
 
     // --- HELPERS DE STYLE ---
 

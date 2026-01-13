@@ -165,4 +165,22 @@ public class UserManagementControllerImpl implements UserManagementController {
     private void showError(String title, String message) {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
     }
+
+    @Override
+    public String getUserPassword(String email) {
+        try {
+            // Récupérer l'utilisateur par email
+            Utilisateur user = userService.findByEmail(email);
+            if (user == null) {
+                return "Utilisateur non trouvé";
+            }
+            
+            // Pour le moment, retourner une indication que le mot de passe est hashé
+            // Dans une implémentation réelle, il faudrait un système pour stocker les mots de passe en clair
+            // ou une méthode de déchiffrement si nécessaire
+            return "[HASHÉ BCrypt] " + user.getMotDePass().substring(0, Math.min(20, user.getMotDePass().length())) + "...";
+        } catch (Exception e) {
+            return "Erreur: " + e.getMessage();
+        }
+    }
 }

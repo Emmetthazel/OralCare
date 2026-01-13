@@ -4,6 +4,8 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import ma.oralCare.entities.base.BaseEntity;
 import ma.oralCare.entities.enums.StatutFacture;
+import ma.oralCare.entities.dossierMedical.SituationFinanciere;
+import ma.oralCare.entities.dossierMedical.Consultation;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +32,28 @@ public class Facture extends BaseEntity {
     private SituationFinanciere situationFinanciere;
 
     private Consultation consultation;
+
+    // Méthodes utilitaires pour l'affichage
+    public String getNumero() {
+        return "#" + (getIdEntite() != null ? getIdEntite() : "000");
+    }
+    
+    public String getPatientNom() {
+        if (consultation != null && consultation.getDossierMedicale() != null && 
+            consultation.getDossierMedicale().getPatient() != null) {
+            return consultation.getDossierMedicale().getPatient().getNom() + " " + 
+                   consultation.getDossierMedicale().getPatient().getPrenom();
+        }
+        return "Patient inconnu";
+    }
+    
+    public String getStatut() {
+        return statut != null ? statut.name() : "INCONNU";
+    }
+    
+    public StatutFacture getStatutEnum() {
+        return statut;
+    }
 
     @Override
     public String toString() {

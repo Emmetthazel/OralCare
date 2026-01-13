@@ -2,6 +2,8 @@ package ma.oralCare.mvc.ui1.secretaire;
 
 import ma.oralCare.conf.SessionFactory;
 import ma.oralCare.mvc.ui1.MainFrame;
+import ma.oralCare.mvc.ui1.SideBarPanel;
+import ma.oralCare.mvc.utils.StatutTranslator;
 import ma.oralCare.mvc.ui1.secretaire.dialog.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -19,6 +21,9 @@ public class PatientManagementPanel extends JPanel {
     private JTable tablePatients;
     private DefaultTableModel tableModel;
     private JTextField txtSearch;
+    
+    // Boutons d'action pour gérer l'état
+    private JButton btnEdit, btnDossier, btnRDV;
 
     public PatientManagementPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -42,7 +47,7 @@ public class PatientManagementPanel extends JPanel {
         searchPanel.add(new JLabel("🔍 "));
         txtSearch = new JTextField(20);
         txtSearch.setToolTipText("Recherche par Nom, CIN ou Téléphone");
-        txtSearch.addActionListener(e -> refreshTable());
+        txtSearch.addActionListener(e -> refreshTable(true)); // Préserver la sélection pendant la recherche
         searchPanel.add(txtSearch);
 
         JButton btnAdd = new JButton("＋ Nouveau Patient");
@@ -50,7 +55,7 @@ public class PatientManagementPanel extends JPanel {
         btnAdd.setForeground(Color.WHITE);
         btnAdd.addActionListener(e -> {
             new PatientDialog(mainFrame, null).setVisible(true);
-            refreshTable();
+            refreshTable(false); // Ne pas préserver la sélection après ajout
         });
 
         topPanel.add(searchPanel, BorderLayout.WEST);
@@ -121,26 +126,73 @@ public class PatientManagementPanel extends JPanel {
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         bottomPanel.setOpaque(false);
 
-        JButton btnEdit = new JButton("📝 Fiche");
-        JButton btnHistory = new JButton("📋 Antécédents");
-        JButton btnDossier = new JButton("📂 Dossier Médical");
-        JButton btnRDV = new JButton("📅 Planifier RDV");
+        btnEdit = new JButton("📝 Fiche");
+        btnDossier = new JButton("📂 Dossier Médical");
+        btnRDV = new JButton("📅 Planifier RDV");
+
+        // État initial : désactivé car aucun patient sélectionné
+        updateButtonStates(false);
 
         btnEdit.addActionListener(e -> handleAction("EDIT"));
-        btnHistory.addActionListener(e -> handleAction("HISTORY"));
         btnDossier.addActionListener(e -> handleAction("DOSSIER"));
         btnRDV.addActionListener(e -> handleAction("RDV"));
 
         bottomPanel.add(btnEdit);
-        bottomPanel.add(btnHistory);
         bottomPanel.add(btnDossier);
         bottomPanel.add(new JSeparator(JSeparator.VERTICAL));
         bottomPanel.add(btnRDV);
 
         add(bottomPanel, BorderLayout.SOUTH);
+        
+        // Ajouter un listener pour gérer la sélection
+        tablePatients.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                boolean hasSelection = tablePatients.getSelectedRow() != -1;
+                updateButtonStates(hasSelection);
+            }
+        });
+    }
+    
+    private void updateButtonStates(boolean hasSelection) {
+        btnEdit.setEnabled(hasSelection);
+        btnDossier.setEnabled(hasSelection);
+        btnRDV.setEnabled(hasSelection);
+        
+        // Couleur différente quand désactivé
+        Color disabledColor = new Color(200, 200, 200);
+        Color enabledColor = new Color(52, 152, 219);
+        
+        btnEdit.setBackground(hasSelection ? enabledColor : disabledColor);
+        btnDossier.setBackground(hasSelection ? new Color(46, 204, 113) : disabledColor);
+        btnRDV.setBackground(hasSelection ? new Color(241, 196, 15) : disabledColor);
+        
+        // Texte indicatif quand désactivé
+        if (!hasSelection) {
+            btnDossier.setText("📂 Dossier Médical (Sélectionner un patient)");
+            btnEdit.setText("📝 Fiche (Sélectionner un patient)");
+            btnRDV.setText("📅 Planifier RDV (Sélectionner un patient)");
+        } else {
+            btnDossier.setText("📂 Dossier Médical");
+            btnEdit.setText("📝 Fiche");
+            btnRDV.setText("📅 Planifier RDV");
+        }
     }
 
     public void refreshTable() {
+        refreshTable(true); // Par défaut, préserver la sélection
+    }
+    
+    /**
+     * Rafraîchit la table des patients avec option de préserver la sélection
+     * @param preserveSelection Si true, préserve la sélection actuelle
+     */
+    public void refreshTable(boolean preserveSelection) {
+        // Sauvegarder la sélection actuelle si demandé
+        Long selectedPatientId = null;
+        if (preserveSelection && tablePatients.getSelectedRow() != -1) {
+            selectedPatientId = (Long) tableModel.getValueAt(tablePatients.getSelectedRow(), 0);
+        }
+        
         tableModel.setRowCount(0);
         String filter = txtSearch.getText().trim();
 
@@ -160,7 +212,9 @@ public class PatientManagementPanel extends JPanel {
 
             if (!filter.isEmpty()) {
                 String p = "%" + filter + "%";
-                ps.setString(1, p); ps.setString(2, p); ps.setString(3, p);
+                ps.setString(1, p); 
+                ps.setString(2, p); 
+                ps.setString(3, p);
             }
 
             ResultSet rs = ps.executeQuery();
@@ -172,10 +226,22 @@ public class PatientManagementPanel extends JPanel {
                         rs.getString("telephone"),
                         rs.getString("assurance"),
                         rs.getInt("has_rdv") > 0, // Boolean pour le rendu
-                        "Complet" // Placeholder statut dossier
+                        StatutTranslator.traduireStatut("COMPLETED") // Statut traduit
                 });
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) { 
+            e.printStackTrace(); 
+        }
+        
+        // Restaurer la sélection si demandé
+        if (preserveSelection && selectedPatientId != null) {
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                if (selectedPatientId.equals(tableModel.getValueAt(i, 0))) {
+                    tablePatients.setRowSelectionInterval(i, i);
+                    break;
+                }
+            }
+        }
     }
 
     private void handleAction(String action) {
@@ -186,11 +252,93 @@ public class PatientManagementPanel extends JPanel {
         String name = (String) tableModel.getValueAt(row, 2);
 
         switch (action) {
-            case "EDIT": new PatientDialog(mainFrame, id).setVisible(true); break;
-            case "HISTORY": new AntecedentDialog(mainFrame, id).setVisible(true); break;
-            case "DOSSIER": new DossierMedicalDialog(mainFrame, id, name).setVisible(true); break;
-            case "RDV": new RendezVousDialog(mainFrame, null).setVisible(true); break;
+            case "EDIT": 
+                new PatientDialog(mainFrame, id).setVisible(true); 
+                refreshTable(false); // Ne pas préserver la sélection après modification
+                break;
+            case "DOSSIER": 
+                // Naviguer vers l'interface DossierMedicalPanel existante et charger le patient
+                mainFrame.showView("DOSSIERS");
+                // Charger le patient dans le dossier médical
+                JPanel dossierPanel = mainFrame.getDossierMedicalPanel();
+                if (dossierPanel instanceof DossierMedicalSecretairePanel) {
+                    String patientName = getPatientNameFromTable(id);
+                    ((DossierMedicalSecretairePanel) dossierPanel).loadPatientFromSelection(id, patientName);
+                }
+                break;
+            case "RDV": 
+                new RendezVousDialog(mainFrame, null).setVisible(true); 
+                refreshTable(false); // Ne pas préserver la sélection après ajout
+                break;
         }
-        refreshTable();
+        
+        // Ne pas appeler refreshTable() ici pour préserver l'état des boutons
+        // La table sera rafraîchie uniquement quand nécessaire (ajout/modification de patient)
+    }
+    
+    /**
+     * Charge le patient sélectionné dans l'interface DossierMedicalPanel existante
+     */
+    private void loadPatientInDossierMedical(Long patientId, String patientName) {
+        try {
+            // 1. Naviguer vers la vue DOSSIERS
+            mainFrame.showView("DOSSIERS");
+            
+            // 2. Mettre en évidence le bouton "Dossiers Médicaux" dans le sidebar
+            SideBarPanel sideBar = mainFrame.getSideBarPanel();
+            if (sideBar != null) {
+                sideBar.highlightButtonByViewID("DOSSIERS");
+            }
+            
+            // 3. Obtenir le panel de dossier médical et charger le patient sélectionné
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    // Utiliser la nouvelle méthode pour accéder au panel de dossier médical
+                    JPanel dossierPanel = mainFrame.getDossierMedicalPanel();
+                    
+                    if (dossierPanel != null) {
+                        // Charger le patient selon le type de panel
+                        if (dossierPanel instanceof DossierMedicalPanel) {
+                            ((DossierMedicalPanel) dossierPanel).loadPatientFromSelection(patientId, patientName);
+                        } else if (dossierPanel instanceof DossierMedicalSecretairePanel) {
+                            ((DossierMedicalSecretairePanel) dossierPanel).loadPatientFromSelection(patientId, patientName);
+                        }
+                        
+                        // Afficher un message de confirmation
+                        JOptionPane.showMessageDialog(mainFrame, 
+                            "📂 Dossier médical chargé pour : " + patientName, 
+                            "Chargement réussi", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(mainFrame, 
+                            "Erreur : Aucun panel de dossier médical trouvé. Vérifiez la configuration.", 
+                            "Erreur", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(mainFrame, 
+                        "Erreur lors du chargement du dossier : " + e.getMessage(), 
+                        "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Erreur lors de la navigation : " + e.getMessage(), 
+                "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Récupère le nom du patient depuis la table en utilisant son ID
+     * @param patientId L'ID du patient
+     * @return Le nom complet du patient
+     */
+    private String getPatientNameFromTable(Long patientId) {
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            Long id = (Long) tableModel.getValueAt(i, 0);
+            if (patientId.equals(id)) {
+                return (String) tableModel.getValueAt(i, 2); // Colonne "Nom & Prénom"
+            }
+        }
+        return "Patient inconnu";
     }
 }

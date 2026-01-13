@@ -39,13 +39,7 @@ public class MesRDVPanel extends JPanel {
 
         // --- Table des RDV ---
         String[] columns = {"Heure", "Patient", "Motif", "Statut", "Consultation", "Action"};
-        Object[][] data = {
-                {"09:00", "Amine H.", "Douleur molaire", "Confirmé", "Non créée", "▶"},
-                {"10:00", "Sara K.", "Contrôle", "Confirmé", "En cours", "▶"},
-                {"11:30", "Yassine B.", "Extraction", "En attente", "Non créée", "▶"},
-                {"14:00", "Lina A.", "Détartrage", "Confirmé", "Terminée", "▶"}
-        };
-        tableModel = new DefaultTableModel(data, columns) {
+        tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // table non éditable

@@ -207,4 +207,12 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         return clearPassword;
     }
+
+    @Override
+    public Utilisateur findByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+        return userRepository.findByEmail(email.trim()).orElse(null);
+    }
 }
