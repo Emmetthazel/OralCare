@@ -14,18 +14,15 @@ import ma.oralCare.repository.modules.patient.api.*;
 import ma.oralCare.repository.modules.patient.impl.*;
 import ma.oralCare.service.modules.admin.api.*;
 import ma.oralCare.service.modules.admin.impl.*;
-import ma.oralCare.service.modules.cabinet.api.*; // ✅ Ajouté
-import ma.oralCare.service.modules.cabinet.impl.*; // ✅ Ajouté
+import ma.oralCare.service.modules.cabinet.api.*;
+import ma.oralCare.service.modules.cabinet.impl.*;
 import ma.oralCare.mvc.controllers.admin.api.*;
 import ma.oralCare.mvc.controllers.admin.impl.*;
-
-import ma.oralCare.mvc.ui.admin.AdminDashboard;
 import ma.oralCare.mvc.ui.admin.components.AdminSidebar;
 import ma.oralCare.mvc.ui.admin.user.UserListView;
-import ma.oralCare.mvc.ui.admin.roles.RoleManagerView;
 import ma.oralCare.mvc.ui.admin.referentiel.ReferentielView;
-import ma.oralCare.mvc.ui.admin.security.BackupManagerView;
-import ma.oralCare.mvc.ui.admin.security.AuditLogView;
+import ma.oralCare.mvc.ui.admin.security.SecurityAuditView;
+import ma.oralCare.mvc.ui.mainframe.AdminDashboard;
 
 import ma.oralCare.mvc.ui1.FooterPanel;
 import ma.oralCare.mvc.ui1.HeaderPanel;
@@ -59,20 +56,14 @@ public class MainFrame extends JFrame implements Navigatable {
 
         // --- 2. INITIALISATION DES SERVICES ---
         UserManagementService userService = new UserManagementServiceImpl(userRepo);
-
-        // ✅ CORRECTION : Initialisation du service de gestion des cabinets
         CabinetManagementService cabinetService = new CabinetManagementServiceImpl(cabinetRepo);
-
         SystemReferentielService refService = new SystemReferentielServiceImpl(medicRepo, anteRepo, acteRepo);
 
         String currentAdminLogin = principal.getLogin();
         String currentRole = "ADMINISTRATEUR";
 
         // --- 3. INITIALISATION DES CONTROLLERS ---
-
-        // ✅ CORRECTION : Le contrôleur reçoit maintenant userService ET cabinetService
         UserManagementController userCtrl = new UserManagementControllerImpl(userService, cabinetService);
-
         AdminDashboardController dashboardCtrl = new AdminDashboardControllerImpl(
                 cabinetRepo,
                 logRepo,
@@ -80,7 +71,6 @@ public class MainFrame extends JFrame implements Navigatable {
                 userRepo,
                 currentAdminLogin
         );
-
         SystemReferentielController refCtrl = new SystemReferentielControllerImpl(refService);
 
         // --- 4. CONFIGURATION DE LA FENÊTRE ---
@@ -109,14 +99,15 @@ public class MainFrame extends JFrame implements Navigatable {
         mainContent = new JPanel(cardLayout);
 
         // Enregistrement des vues
-        mainContent.add(new AdminDashboard(currentAdminLogin, dashboardCtrl), "DASHBOARD");
+        AdminDashboard newAdminDashboard = new AdminDashboard();
+        newAdminDashboard.setControllers(dashboardCtrl, userCtrl, refCtrl, null, null, null);
+        mainContent.add(newAdminDashboard, "DASHBOARD");
+        
         mainContent.add(new UserListView(userCtrl), "USERS");
         mainContent.add(new CabinetFormView(userCtrl, this), "FORM_CABINET");
-        mainContent.add(new RoleManagerView(), "ROLES");
-        mainContent.add(new ReferentielView(refCtrl), "REF_DATA");
-        mainContent.add(new BackupManagerView(), "SECURITY");
-        mainContent.add(new AuditLogView(dashboardCtrl), "LOGS");
 
+        mainContent.add(new ReferentielView(refCtrl), "REF_DATA");
+        mainContent.add(new SecurityAuditView(dashboardCtrl), "SECURITY");
         mainContent.add(new JPanel(), "PROFILE");
 
         add(mainContent, BorderLayout.CENTER);
@@ -137,12 +128,11 @@ public class MainFrame extends JFrame implements Navigatable {
 
         Component currentCard = getVisibleCard();
 
-        if (currentCard instanceof AdminDashboard) {
-            ((AdminDashboard) currentCard).refreshData();
-        } else if (currentCard instanceof UserListView) {
+        // Logique de rafraîchissement automatique lors du changement de page
+        if (currentCard instanceof UserListView) {
             ((UserListView) currentCard).renderHierarchy();
-        } else if (currentCard instanceof AuditLogView) {
-            ((AuditLogView) currentCard).refreshLogs();
+        } else if (currentCard instanceof SecurityAuditView) {
+            ((SecurityAuditView) currentCard).refreshLogs();
         }
 
         mainContent.revalidate();
@@ -150,8 +140,8 @@ public class MainFrame extends JFrame implements Navigatable {
     }
 
     private String formatTitle(String id) {
-        if ("LOGS".equals(id)) return "LOGS & AUDIT";
-        if ("FORM_CABINET".equals(id)) return "CRÉATION CABINET"; // ✅ Titre propre
+        if ("SECURITY".equals(id)) return "SÉCURITÉ & AUDIT";
+        if ("FORM_CABINET".equals(id)) return "CRÉATION CABINET";
         return id.replace("_", " ");
     }
 
